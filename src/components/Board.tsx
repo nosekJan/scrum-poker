@@ -3,11 +3,16 @@ import { Card } from "./Card";
 import type { CardValue } from "../types/poker";
 
 interface BoardProps {
+  roomId: string; // <-- Pridali sme roomId do typov
   playerName: string;
   onLeave: () => void;
 }
 
-export const Board: React.FC<BoardProps> = ({ playerName, onLeave }) => {
+export const Board: React.FC<BoardProps> = ({
+  roomId,
+  playerName,
+  onLeave,
+}) => {
   const [selectedCard, setSelectedCard] = useState<CardValue | null>(null);
   const cards: CardValue[] = [
     "0",
@@ -27,11 +32,18 @@ export const Board: React.FC<BoardProps> = ({ playerName, onLeave }) => {
 
   return (
     <div className="min-h-screen flex flex-col p-6 bg-neutral-950 text-white">
-      {/* Hlavicka stola (Kto som a tlacitko na odchod) */}
+      {/* Hlavicka stola */}
       <header className="flex justify-between items-center mb-12 max-w-5xl mx-auto w-full">
-        <h1 className="text-xl font-bold">
-          Kestra Poker <span className="text-emerald-500">.</span>
-        </h1>
+        <div className="flex items-center gap-6">
+          <h1 className="text-xl font-bold">
+            Kestra Poker <span className="text-emerald-500">.</span>
+          </h1>
+          {/* Tu zobrazujeme ID miestnosti v peknom badge */}
+          <div className="hidden sm:flex items-center px-3 py-1 bg-neutral-900 border border-neutral-800 rounded-md text-sm text-neutral-400">
+            Room: <span className="text-white ml-2 font-mono">{roomId}</span>
+          </div>
+        </div>
+
         <div className="flex items-center gap-4">
           <span className="text-neutral-400">
             Playing as <strong className="text-white">{playerName}</strong>
