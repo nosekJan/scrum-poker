@@ -27,24 +27,30 @@ export const usePokerGame = (roomId: string, playerName: string) => {
     channelRef.current = roomChannel;
 
     roomChannel
-      // 1. Zisťujeme KTO tu je
       .on('presence', { event: 'sync' }, () => {
         const state = roomChannel.presenceState();
-        const currentPlayers: Player[] = [];
-
-        for (const [key, presenceArray] of Object.entries(state)) {
-          const presenceData = (presenceArray as any[])[0];
-          // Pridáme len ak tento hráč ešte v zozname nie je, inak si pamätáme jeho aktuálnu kartu
-          setPlayers((prev) => {
-            const existing = prev.find(p => p.id === key);
-            return existing ? prev : [...prev, { id: key, name: presenceData.name, selectedCard: null }];
-          });
-        }
+        
+        // 🔥 OPRAVA: Prestavíme celé pole presne podľa toho, kto je reálne v roomke
+        setPlayers((prev) => {
+          const activePlayers: Player[] = [];
+          
+          for (const [key, presenceArray] of Object.entries(state)) {
+            const presenceData = (presenceArray as any[])[0];
+            const existingPlayer = prev.find(p => p.id === key);
+            
+            activePlayers.push({
+              id: key,
+              name: presenceData.name,
+              // Ak tu už hráč bol, necháme mu jeho kartu, inak null
+              selectedCard: existingPlayer ? existingPlayer.selectedCard : null,
+            });
+          }
+          
+          return activePlayers; // Vraciame IBA aktívnych hráčov, tí čo odišli, tu nebudú
+        });
       })
-      // 2. Počúvame bleskové správy z "vysielačky" (Broadcast)
       .on('broadcast', { event: 'vote' }, (payload) => {
         const { userId, card } = payload.payload;
-        // Aktualizujeme stav hráča na zeleno, hneď ako to počujeme
         setPlayers((prevPlayers) =>
           prevPlayers.map((p) => (p.id === userId ? { ...p, selectedCard: card } : p))
         );
@@ -61,14 +67,11 @@ export const usePokerGame = (roomId: string, playerName: string) => {
     };
   }, [roomId, playerName]);
 
-  // 3. Namiesto trackovania teraz hlas KRIČÍME do vysielačky
   const castVote = async (card: CardValue | null) => {
-    // Najprv si to okamžite zmeníme my u seba (lokálne)
     setPlayers((prev) =>
       prev.map((p) => (p.id === myUserId ? { ...p, selectedCard: card } : p))
     );
 
-    // A potom to pošleme ostatným
     if (channelRef.current) {
       await channelRef.current.send({
         type: 'broadcast',
