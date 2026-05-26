@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { Card } from "./Card";
 import type { CardValue } from "../types/poker";
+import { usePokerGame } from "../hooks/usePokerGame"; // <-- Nový import
 
 interface BoardProps {
-  roomId: string; // <-- Pridali sme roomId do typov
+  roomId: string;
   playerName: string;
   onLeave: () => void;
 }
@@ -30,6 +31,9 @@ export const Board: React.FC<BoardProps> = ({
     "☕",
   ];
 
+  // 🔥 Tu voláme náš Supabase hook a získavame zoznam hráčov
+  const { players } = usePokerGame(roomId, playerName);
+
   return (
     <div className="min-h-screen flex flex-col p-6 bg-neutral-950 text-white">
       {/* Hlavicka stola */}
@@ -38,7 +42,6 @@ export const Board: React.FC<BoardProps> = ({
           <h1 className="text-xl font-bold">
             Kestra Poker <span className="text-emerald-500">.</span>
           </h1>
-          {/* Tu zobrazujeme ID miestnosti v peknom badge */}
           <div className="hidden sm:flex items-center px-3 py-1 bg-neutral-900 border border-neutral-800 rounded-md text-sm text-neutral-400">
             Room: <span className="text-white ml-2 font-mono">{roomId}</span>
           </div>
@@ -57,9 +60,25 @@ export const Board: React.FC<BoardProps> = ({
         </div>
       </header>
 
-      {/* Tu neskor pribudne zoznam ostatnych hracov pri stole (Avatary) */}
-      <div className="flex-1 max-w-5xl mx-auto w-full flex items-center justify-center border-2 border-dashed border-neutral-800 rounded-3xl mb-12 min-h-[200px]">
-        <p className="text-neutral-500">Ostatní hráči sa zobrazia tu...</p>
+      {/* 🚀 Zoznam hráčov pri stole */}
+      <div className="flex-1 max-w-5xl mx-auto w-full flex flex-wrap content-start justify-center gap-8 mb-12 min-h-[200px]">
+        {players.map((player) => (
+          <div key={player.id} className="flex flex-col items-center gap-3">
+            <div
+              className={`w-16 h-24 rounded-xl border-2 flex items-center justify-center transition-all ${
+                player.selectedCard
+                  ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                  : "bg-neutral-800 border-neutral-700 text-neutral-500"
+              }`}
+            >
+              {/* Zatiaľ ukazujeme iba status, nie reálnu kartu */}
+              {player.selectedCard ? "✔️" : "🤔"}
+            </div>
+            <span className="text-sm font-medium text-neutral-300">
+              {player.name}
+            </span>
+          </div>
+        ))}
       </div>
 
       {/* Moje karty na hlasovanie */}
