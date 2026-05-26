@@ -6,13 +6,16 @@ function App() {
   const [selectedCard, setSelectedCard] = useState<CardValue | null>(null);
   const cards: CardValue[] = [
     "0",
+    "0.5",
     "1",
     "2",
     "3",
     "5",
     "8",
     "13",
-    "21",
+    "20",
+    "40",
+    "100",
     "?",
     "☕",
   ];
