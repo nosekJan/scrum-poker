@@ -27,43 +27,53 @@ export const usePokerGame = (roomId: string, playerName: string) => {
     channelRef.current = roomChannel;
 
     roomChannel
+      // 1. Zisťujeme KTO tu je
       .on('presence', { event: 'sync' }, () => {
         const state = roomChannel.presenceState();
         const currentPlayers: Player[] = [];
 
         for (const [key, presenceArray] of Object.entries(state)) {
           const presenceData = (presenceArray as any[])[0];
-          currentPlayers.push({
-            id: key,
-            name: presenceData.name,
-            selectedCard: presenceData.selectedCard || null,
+          // Pridáme len ak tento hráč ešte v zozname nie je, inak si pamätáme jeho aktuálnu kartu
+          setPlayers((prev) => {
+            const existing = prev.find(p => p.id === key);
+            return existing ? prev : [...prev, { id: key, name: presenceData.name, selectedCard: null }];
           });
         }
-        
-        setPlayers(currentPlayers);
+      })
+      // 2. Počúvame bleskové správy z "vysielačky" (Broadcast)
+      .on('broadcast', { event: 'vote' }, (payload) => {
+        const { userId, card } = payload.payload;
+        // Aktualizujeme stav hráča na zeleno, hneď ako to počujeme
+        setPlayers((prevPlayers) =>
+          prevPlayers.map((p) => (p.id === userId ? { ...p, selectedCard: card } : p))
+        );
       })
       .subscribe(async (status: string) => {
         if (status === 'SUBSCRIBED') {
-          await roomChannel.track({
-            name: playerName,
-            selectedCard: null,
-          });
+          await roomChannel.track({ name: playerName });
         }
       });
 
     return () => {
-      // 🔥 OPRAVA: Okamžité synchrónne odstránenie kanálu. 
-      // Supabase sa o odhlásenie na pozadí postará sám a Strict Mode už nebude padať.
       supabase.removeChannel(roomChannel);
       channelRef.current = null;
     };
   }, [roomId, playerName]);
 
+  // 3. Namiesto trackovania teraz hlas KRIČÍME do vysielačky
   const castVote = async (card: CardValue | null) => {
+    // Najprv si to okamžite zmeníme my u seba (lokálne)
+    setPlayers((prev) =>
+      prev.map((p) => (p.id === myUserId ? { ...p, selectedCard: card } : p))
+    );
+
+    // A potom to pošleme ostatným
     if (channelRef.current) {
-      await channelRef.current.track({
-        name: playerName,
-        selectedCard: card,
+      await channelRef.current.send({
+        type: 'broadcast',
+        event: 'vote',
+        payload: { userId: myUserId, card },
       });
     }
   };
