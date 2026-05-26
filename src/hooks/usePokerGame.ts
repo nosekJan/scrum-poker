@@ -1,20 +1,30 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import type { Player } from '../types/poker';
+import type { Player, CardValue } from '../types/poker';
 
-const myUserId = Math.random().toString(36).substring(2, 10);
+const getUserId = () => {
+  let id = sessionStorage.getItem('poker_user_id');
+  if (!id) {
+    id = Math.random().toString(36).substring(2, 10);
+    sessionStorage.setItem('poker_user_id', id);
+  }
+  return id;
+};
+
+const myUserId = getUserId();
 
 export const usePokerGame = (roomId: string, playerName: string) => {
   const [players, setPlayers] = useState<Player[]>([]);
+  const channelRef = useRef<any>(null);
 
   useEffect(() => {
     const roomChannel = supabase.channel(`room_${roomId}`, {
       config: {
-        presence: {
-          key: myUserId,
-        },
+        presence: { key: myUserId },
       },
     });
+
+    channelRef.current = roomChannel;
 
     roomChannel
       .on('presence', { event: 'sync' }, () => {
@@ -22,10 +32,7 @@ export const usePokerGame = (roomId: string, playerName: string) => {
         const currentPlayers: Player[] = [];
 
         for (const [key, presenceArray] of Object.entries(state)) {
-          // Oprava chyby 2: Explicitne povieme TS, že presenceArray je pole
-          const typedPresenceArray = presenceArray as any[];
-          const presenceData = typedPresenceArray[0];
-          
+          const presenceData = (presenceArray as any[])[0];
           currentPlayers.push({
             id: key,
             name: presenceData.name,
@@ -35,7 +42,6 @@ export const usePokerGame = (roomId: string, playerName: string) => {
         
         setPlayers(currentPlayers);
       })
-      // Oprava chyby 3: Definovali sme, že status je string
       .subscribe(async (status: string) => {
         if (status === 'SUBSCRIBED') {
           await roomChannel.track({
@@ -46,9 +52,21 @@ export const usePokerGame = (roomId: string, playerName: string) => {
       });
 
     return () => {
-      roomChannel.unsubscribe();
+      // 🔥 OPRAVA: Okamžité synchrónne odstránenie kanálu. 
+      // Supabase sa o odhlásenie na pozadí postará sám a Strict Mode už nebude padať.
+      supabase.removeChannel(roomChannel);
+      channelRef.current = null;
     };
   }, [roomId, playerName]);
 
-  return { players };
+  const castVote = async (card: CardValue | null) => {
+    if (channelRef.current) {
+      await channelRef.current.track({
+        name: playerName,
+        selectedCard: card,
+      });
+    }
+  };
+
+  return { players, castVote };
 };

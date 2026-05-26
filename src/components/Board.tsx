@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Card } from "./Card";
 import type { CardValue } from "../types/poker";
-import { usePokerGame } from "../hooks/usePokerGame"; // <-- Nový import
+import { usePokerGame } from "../hooks/usePokerGame";
 
 interface BoardProps {
   roomId: string;
@@ -31,12 +31,19 @@ export const Board: React.FC<BoardProps> = ({
     "☕",
   ];
 
-  // 🔥 Tu voláme náš Supabase hook a získavame zoznam hráčov
-  const { players } = usePokerGame(roomId, playerName);
+  // 🔥 Vytiahneme aj novú funkciu castVote
+  const { players, castVote } = usePokerGame(roomId, playerName);
+
+  // 🔥 Táto funkcia sa zavolá pri kliknutí na kartu
+  const handleCardClick = (value: CardValue) => {
+    // Ak klikneš na tú istú kartu, odznačí sa (pošle sa null)
+    const newValue = selectedCard === value ? null : value;
+    setSelectedCard(newValue);
+    castVote(newValue); // Pošleme nový stav do Supabase!
+  };
 
   return (
     <div className="min-h-screen flex flex-col p-6 bg-neutral-950 text-white">
-      {/* Hlavicka stola */}
       <header className="flex justify-between items-center mb-12 max-w-5xl mx-auto w-full">
         <div className="flex items-center gap-6">
           <h1 className="text-xl font-bold">
@@ -60,7 +67,6 @@ export const Board: React.FC<BoardProps> = ({
         </div>
       </header>
 
-      {/* 🚀 Zoznam hráčov pri stole */}
       <div className="flex-1 max-w-5xl mx-auto w-full flex flex-wrap content-start justify-center gap-8 mb-12 min-h-[200px]">
         {players.map((player) => (
           <div key={player.id} className="flex flex-col items-center gap-3">
@@ -71,7 +77,6 @@ export const Board: React.FC<BoardProps> = ({
                   : "bg-neutral-800 border-neutral-700 text-neutral-500"
               }`}
             >
-              {/* Zatiaľ ukazujeme iba status, nie reálnu kartu */}
               {player.selectedCard ? "✔️" : "🤔"}
             </div>
             <span className="text-sm font-medium text-neutral-300">
@@ -81,7 +86,6 @@ export const Board: React.FC<BoardProps> = ({
         ))}
       </div>
 
-      {/* Moje karty na hlasovanie */}
       <div className="mt-auto max-w-3xl mx-auto pb-8">
         <p className="text-center text-sm text-neutral-400 mb-4">
           Choose your estimate
@@ -92,7 +96,8 @@ export const Board: React.FC<BoardProps> = ({
               key={value}
               value={value}
               isSelected={selectedCard === value}
-              onClick={() => setSelectedCard(value)}
+              // 🔥 Tu sme zmenili onClick
+              onClick={() => handleCardClick(value)}
             />
           ))}
         </div>
