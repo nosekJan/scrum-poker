@@ -60,6 +60,31 @@ export const Board: React.FC<BoardProps> = ({
     return (sum / validVotes.length).toFixed(1);
   }, [players]);
 
+  // 🔥 Logika pre štatistiky
+  const voteStats = useMemo(() => {
+    if (!isRevealed) return [];
+
+    const stats: Record<string, number> = {};
+    let totalVotes = 0;
+
+    players.forEach((p) => {
+      if (p.selectedCard) {
+        stats[p.selectedCard] = (stats[p.selectedCard] || 0) + 1;
+        totalVotes++;
+      }
+    });
+
+    if (totalVotes === 0) return [];
+
+    return Object.entries(stats)
+      .map(([card, count]) => ({
+        card,
+        count,
+        percentage: Math.round((count / totalVotes) * 100),
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [players, isRevealed]);
+
   return (
     <div className="min-h-screen flex flex-col p-6 bg-neutral-950 text-white">
       <header className="flex justify-between items-center mb-12 max-w-5xl mx-auto w-full">
@@ -87,7 +112,7 @@ export const Board: React.FC<BoardProps> = ({
 
       <div className="flex-1 max-w-5xl mx-auto w-full flex flex-col items-center">
         {/* Kontajner s min-h drží stabilnú výšku, aby priemer po odhalení neposunul stôl s kartami */}
-        <div className="mb-8 flex flex-col items-center gap-4 min-h-[100px] justify-center">
+        <div className="mb-8 flex flex-col items-center gap-4 min-h-[120px] justify-center">
           {isRevealed && (
             <>
               <button
@@ -97,9 +122,36 @@ export const Board: React.FC<BoardProps> = ({
                 Start New Vote
               </button>
 
-              <div className="text-center transition-opacity duration-300">
-                <p className="text-neutral-400 text-sm mb-1">Average</p>
-                <p className="text-3xl font-bold text-emerald-400">{average}</p>
+              <div className="text-center transition-opacity duration-300 flex flex-col items-center gap-1">
+                <div>
+                  <p className="text-neutral-400 text-sm mb-1">Average</p>
+                  <p className="text-3xl font-bold text-emerald-400">
+                    {average}
+                  </p>
+                </div>
+
+                {/* 🚀 Zjednodušený výpis štatistík (pilulky) */}
+                {voteStats.length > 0 && (
+                  <div className="flex flex-wrap justify-center gap-2 mt-2">
+                    {voteStats.map((stat) => (
+                      <div
+                        key={stat.card}
+                        className="bg-neutral-800/80 px-3 py-1 rounded-md text-sm border border-neutral-700/50 flex items-center gap-2"
+                      >
+                        <span className="font-bold text-white">
+                          {stat.card}
+                        </span>
+                        <span className="text-neutral-500">•</span>
+                        <span className="text-emerald-400/90">
+                          {stat.percentage}%
+                        </span>
+                        <span className="text-neutral-500 text-xs">
+                          ({stat.count})
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </>
           )}
