@@ -15,5 +15,6 @@ export interface Story {
   id: string;
   title: string;
   estimate: string;
+  time?: string;
   createdAt: string;
 }

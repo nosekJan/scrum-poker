@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Card } from "./Card";
 import type { CardValue } from "../types/poker";
-import { usePokerGame, myUserId } from "../hooks/usePokerGame";
+import { usePokerGame, myUserId, formatTime } from "../hooks/usePokerGame";
 
 interface BoardProps {
   roomId: string;
@@ -19,6 +19,7 @@ export const Board: React.FC<BoardProps> = ({
   const [selectedCard, setSelectedCard] = useState<CardValue | null>(null);
   const [storyInput, setStoryInput] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("active");
+  const [timerDisplay, setTimerDisplay] = useState("00:00"); // 🔥 NOVÉ
 
   const cards: CardValue[] = [
     "0",
@@ -45,6 +46,8 @@ export const Board: React.FC<BoardProps> = ({
     completedStories,
     startStoryGrooming,
     saveAndNextStory,
+    triggerRevote,
+    storyStartTime,
   } = usePokerGame(roomId, playerName);
 
   useEffect(() => {
@@ -52,6 +55,18 @@ export const Board: React.FC<BoardProps> = ({
       setSelectedCard(null);
     }
   }, [isRevealed]);
+
+  // 🔥 NOVÉ: Lokálne Stopky
+  useEffect(() => {
+    if (!activeStory || !storyStartTime) {
+      setTimerDisplay("00:00");
+      return;
+    }
+    const interval = setInterval(() => {
+      setTimerDisplay(formatTime(Date.now() - storyStartTime));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [activeStory, storyStartTime]);
 
   const handleCardClick = (value: CardValue) => {
     if (isRevealed) return;
@@ -65,24 +80,22 @@ export const Board: React.FC<BoardProps> = ({
       .map((p) => p.selectedCard)
       .filter((val) => val !== null && val !== "?" && val !== "☕")
       .map((val) => parseFloat(val as string));
-
     if (validVotes.length === 0) return "0.0";
-    const sum = validVotes.reduce((acc, curr) => acc + curr, 0);
-    return (sum / validVotes.length).toFixed(1);
+    return (
+      validVotes.reduce((acc, curr) => acc + curr, 0) / validVotes.length
+    ).toFixed(1);
   }, [players]);
 
   const voteStats = useMemo(() => {
     if (!isRevealed) return [];
     const stats: Record<string, number> = {};
     let totalVotes = 0;
-
     players.forEach((p) => {
       if (p.selectedCard) {
         stats[p.selectedCard] = (stats[p.selectedCard] || 0) + 1;
         totalVotes++;
       }
     });
-
     if (totalVotes === 0) return [];
     return Object.entries(stats)
       .map(([card, count]) => ({
@@ -125,17 +138,25 @@ export const Board: React.FC<BoardProps> = ({
       </header>
 
       <div className="flex-1 max-w-5xl mx-auto w-full grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* L'AVÝ PANEL: Poker Board & Používatelia */}
         <div className="lg:col-span-2 flex flex-col items-center">
           <div className="mb-8 flex flex-col items-center gap-4 min-h-[140px] justify-center w-full">
             {isRevealed && (
               <>
-                <button
-                  onClick={() => saveAndNextStory(average)}
-                  className="px-6 py-2 bg-emerald-500 text-white rounded-lg font-bold hover:bg-emerald-600 transition-colors cursor-pointer shadow-lg shadow-emerald-500/20"
-                >
-                  Save & Next Story
-                </button>
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => saveAndNextStory(average)}
+                    className="px-6 py-2 bg-emerald-500 text-white rounded-lg font-bold hover:bg-emerald-600 transition-colors cursor-pointer shadow-lg shadow-emerald-500/20"
+                  >
+                    Save & Next Story
+                  </button>
+                  {/* 🔥 NOVÉ: Tlačidlo Re-vote */}
+                  <button
+                    onClick={triggerRevote}
+                    className="px-6 py-2 bg-neutral-800 border border-neutral-700 text-white rounded-lg font-bold hover:bg-neutral-700 transition-colors cursor-pointer"
+                  >
+                    Re-vote
+                  </button>
+                </div>
 
                 <div className="text-center transition-opacity duration-300 flex flex-col items-center gap-1">
                   <div>
@@ -219,9 +240,7 @@ export const Board: React.FC<BoardProps> = ({
           </div>
         </div>
 
-        {/* PRAVÝ PANEL: Grooming Stories (Presne podľa screenshotu) */}
         <div className="bg-neutral-900/60 border border-neutral-900 rounded-2xl p-5 flex flex-col h-[520px]">
-          {/* TABS HEADER */}
           <div className="flex border-b border-neutral-800 mb-4 text-xs font-semibold tracking-wide uppercase">
             <button
               onClick={() => setActiveTab("active")}
@@ -267,15 +286,20 @@ export const Board: React.FC<BoardProps> = ({
             </button>
           </div>
 
-          {/* TAB CONTENT */}
           <div className="flex-1 overflow-y-auto pr-1">
             {activeTab === "active" && (
               <div className="h-full flex flex-col justify-between">
                 {activeStory ? (
                   <div className="bg-neutral-950 border border-neutral-800/60 rounded-xl p-4 shadow-inner">
-                    <p className="text-neutral-500 text-[10px] font-bold uppercase tracking-wider mb-1">
-                      Grooming Now
-                    </p>
+                    <div className="flex justify-between items-center mb-2">
+                      <p className="text-neutral-500 text-[10px] font-bold uppercase tracking-wider">
+                        Grooming Now
+                      </p>
+                      {/* 🔥 NOVÉ: Živé stopky */}
+                      <span className="text-emerald-400/80 font-mono text-xs">
+                        {timerDisplay}
+                      </span>
+                    </div>
                     <h3 className="text-white text-sm font-semibold leading-relaxed break-words">
                       {activeStory}
                     </h3>
@@ -325,10 +349,16 @@ export const Board: React.FC<BoardProps> = ({
                           {story.createdAt}
                         </span>
                       </div>
-                      <div className="bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-md text-center min-w-[36px]">
-                        <span className="text-xs font-bold text-emerald-400 font-mono">
-                          {story.estimate}
+                      <div className="flex items-center gap-3">
+                        {/* 🔥 NOVÉ: Ukazujeme čas */}
+                        <span className="text-[10px] text-neutral-500 font-mono">
+                          {story.time}
                         </span>
+                        <div className="bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-md text-center min-w-[36px]">
+                          <span className="text-xs font-bold text-emerald-400 font-mono">
+                            {story.estimate}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   ))
@@ -348,8 +378,13 @@ export const Board: React.FC<BoardProps> = ({
                         Active
                       </span>
                     </div>
-                    <div className="bg-neutral-900 border border-neutral-800 px-2.5 py-1 rounded-md text-neutral-500 text-xs">
-                      -
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] text-neutral-500 font-mono">
+                        {timerDisplay}
+                      </span>
+                      <div className="bg-neutral-900 border border-neutral-800 px-2.5 py-1 rounded-md text-neutral-500 text-xs">
+                        -
+                      </div>
                     </div>
                   </div>
                 )}
@@ -366,10 +401,15 @@ export const Board: React.FC<BoardProps> = ({
                         {story.createdAt}
                       </span>
                     </div>
-                    <div className="bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-md text-center min-w-[36px]">
-                      <span className="text-xs font-bold text-emerald-400 font-mono">
-                        {story.estimate}
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] text-neutral-500 font-mono">
+                        {story.time}
                       </span>
+                      <div className="bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-md text-center min-w-[36px]">
+                        <span className="text-xs font-bold text-emerald-400 font-mono">
+                          {story.estimate}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -384,7 +424,6 @@ export const Board: React.FC<BoardProps> = ({
         </div>
       </div>
 
-      {/* FOOTER: Výber kariet (Zablokovaný, kým nie je aktívna storka) */}
       <div
         className="mt-auto max-w-3xl mx-auto pb-4 transition-all duration-300"
         style={{

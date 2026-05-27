@@ -13,22 +13,35 @@ const getUserId = () => {
 
 export const myUserId = getUserId();
 
+// 🔥 Helper na formátovanie času do histórie
+export const formatTime = (ms: number) => {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+  const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+  return `${minutes}:${seconds}`;
+};
+
 export const usePokerGame = (roomId: string, playerName: string) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [isRevealed, setIsRevealed] = useState(false);
-  // 🔥 Nové stavy pre storky
   const [activeStory, setActiveStory] = useState<string | null>(null);
   const [completedStories, setCompletedStories] = useState<Story[]>([]);
+  const [storyStartTime, setStoryStartTime] = useState<number | null>(null); // 🔥 NOVÉ
   
   const channelRef = useRef<any>(null);
 
-  // 🔥 Pattern: roomStateRef chráni pred stale closures v realtime callbackoch
-  const roomStateRef = useRef({ isRevealed, activeStory, completedStories });
+  const roomStateRef = useRef({ isRevealed, activeStory, completedStories, storyStartTime });
   useEffect(() => {
-    roomStateRef.current = { isRevealed, activeStory, completedStories };
-  }, [isRevealed, activeStory, completedStories]);
+    roomStateRef.current = { isRevealed, activeStory, completedStories, storyStartTime };
+  }, [isRevealed, activeStory, completedStories, storyStartTime]);
 
   useEffect(() => {
+    // 🔥 Načítanie simulovanej perzistencie (z localStorage)
+    const savedHistory = localStorage.getItem(`poker_history_${roomId}`);
+    if (savedHistory) {
+      setCompletedStories(JSON.parse(savedHistory));
+    }
+
     const roomChannel = supabase.channel(`room_${roomId}`, {
       config: { presence: { key: myUserId } },
     });
@@ -43,7 +56,6 @@ export const usePokerGame = (roomId: string, playerName: string) => {
           for (const [key, presenceArray] of Object.entries(state)) {
             const presenceData = (presenceArray as any[])[0];
             const existingPlayer = prevPlayers.find(p => p.id === key);
-            
             const currentCard = existingPlayer && existingPlayer.selectedCard !== null 
               ? existingPlayer.selectedCard 
               : (presenceData.selectedCard || null);
@@ -60,9 +72,7 @@ export const usePokerGame = (roomId: string, playerName: string) => {
       })
       .on('broadcast', { event: 'vote' }, (payload) => {
         const { userId, card } = payload.payload;
-        setPlayers((prev) =>
-          prev.map((p) => (p.id === userId ? { ...p, selectedCard: card } : p))
-        );
+        setPlayers((prev) => prev.map((p) => (p.id === userId ? { ...p, selectedCard: card } : p)));
       })
       .on('broadcast', { event: 'reveal_state' }, async (payload) => {
          const reveal = payload.payload.isRevealed;
@@ -71,37 +81,38 @@ export const usePokerGame = (roomId: string, playerName: string) => {
              await roomChannel.track({ name: playerName, selectedCard: null });
          }
       })
-      // 🔥 NOVÉ: Synchronizácia storiek cez Broadcast
       .on('broadcast', { event: 'story_state' }, (payload) => {
         setActiveStory(payload.payload.activeStory);
         setCompletedStories(payload.payload.completedStories);
+        setStoryStartTime(payload.payload.storyStartTime); // 🔥 Syncujeme čas
         if (payload.payload.resetVotes) {
           setPlayers(prev => prev.map(p => ({ ...p, selectedCard: null })));
         }
       })
-      // 🔥 NOVÉ: Spracovanie požiadavky na sync od Late-Joinera
+      // 🔥 NOVÉ: Odchytávame Re-Vote
+      .on('broadcast', { event: 'revote' }, async () => {
+        setIsRevealed(false);
+        setPlayers(prev => prev.map(p => ({ ...p, selectedCard: null })));
+        if (roomChannel.state === 'joined') {
+          await roomChannel.track({ name: playerName, selectedCard: null });
+        }
+      })
       .on('broadcast', { event: 'request_sync' }, () => {
         const state = roomChannel.presenceState();
         const sortedIds = Object.keys(state).sort();
-        // Odpovedá iba prvý abecedný hráč v miestnosti, aby sme nespamovali sieť
         if (sortedIds[0] === myUserId) {
-          roomChannel.send({
-            type: 'broadcast',
-            event: 'sync_response',
-            payload: roomStateRef.current,
-          });
+          roomChannel.send({ type: 'broadcast', event: 'sync_response', payload: roomStateRef.current });
         }
       })
-      // 🔥 NOVÉ: Prijatie sync dát pre novo prihláseného hráča
       .on('broadcast', { event: 'sync_response' }, (payload) => {
         setIsRevealed(payload.payload.isRevealed);
         setActiveStory(payload.payload.activeStory);
         setCompletedStories(payload.payload.completedStories);
+        setStoryStartTime(payload.payload.storyStartTime);
       })
       .subscribe(async (status: string) => {
         if (status === 'SUBSCRIBED') {
           await roomChannel.track({ name: playerName, selectedCard: null });
-          // Vyžiadame si aktuálny stav miestnosti od služobne najstaršieho online hráča
           await roomChannel.send({ type: 'broadcast', event: 'request_sync', payload: {} });
         }
       });
@@ -119,11 +130,7 @@ export const usePokerGame = (roomId: string, playerName: string) => {
         await channelRef.current.track({ name: playerName, selectedCard: null });
     }
     if (channelRef.current) {
-       await channelRef.current.send({
-         type: 'broadcast',
-         event: 'reveal_state',
-         payload: { isRevealed: reveal },
-       });
+       await channelRef.current.send({ type: 'broadcast', event: 'reveal_state', payload: { isRevealed: reveal } });
     }
   }, [playerName]);
 
@@ -135,46 +142,63 @@ export const usePokerGame = (roomId: string, playerName: string) => {
     }
   };
 
-  // 🔥 NOVÉ: Vyžiadanie novej storky na stôl
   const startStoryGrooming = async (title: string) => {
     setActiveStory(title);
+    const startTime = Date.now();
+    setStoryStartTime(startTime);
     if (channelRef.current) {
       await channelRef.current.send({
         type: 'broadcast',
         event: 'story_state',
-        payload: { activeStory: title, completedStories, resetVotes: false },
+        payload: { activeStory: title, completedStories, storyStartTime: startTime, resetVotes: false },
       });
     }
   };
 
-  // 🔥 NOVÉ: Uzavretie storky a presun do histórie (Dokončené)
   const saveAndNextStory = async (estimate: string) => {
     if (!activeStory) return;
+    
+    // Zistíme finálny čas
+    const finalTime = storyStartTime ? formatTime(Date.now() - storyStartTime) : '00:00';
     
     const newStory: Story = {
       id: Math.random().toString(36).substring(2, 9),
       title: activeStory,
       estimate,
-      createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      time: finalTime,
+      createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
     const updatedCompleted = [newStory, ...completedStories];
     setCompletedStories(updatedCompleted);
     setActiveStory(null);
+    setStoryStartTime(null);
     setIsRevealed(false);
     setPlayers(prev => prev.map(p => ({ ...p, selectedCard: null })));
+    
+    // 🔥 Uloženie do pamäte prehliadača (krok pred databázou)
+    localStorage.setItem(`poker_history_${roomId}`, JSON.stringify(updatedCompleted));
 
     if (channelRef.current) {
       await channelRef.current.track({ name: playerName, selectedCard: null });
       await channelRef.current.send({
         type: 'broadcast',
         event: 'story_state',
-        payload: { activeStory: null, completedStories: updatedCompleted, resetVotes: true },
+        payload: { activeStory: null, completedStories: updatedCompleted, storyStartTime: null, resetVotes: true },
       });
     }
   };
 
-  // Auto-Reveal Tracker zostáva nezmenený
+  // 🔥 NOVÉ: Vyvolanie Re-vote
+  const triggerRevote = async () => {
+    setIsRevealed(false);
+    setPlayers(prev => prev.map(p => ({ ...p, selectedCard: null })));
+    if (channelRef.current) {
+      await channelRef.current.track({ name: playerName, selectedCard: null });
+      await channelRef.current.send({ type: 'broadcast', event: 'revote', payload: {} });
+    }
+  };
+
   useEffect(() => {
     if (!isRevealed && players.length > 0) {
       const allVoted = players.every(p => p.selectedCard !== null);
@@ -184,5 +208,5 @@ export const usePokerGame = (roomId: string, playerName: string) => {
     }
   }, [players, isRevealed, toggleReveal]);
 
-  return { players, castVote, isRevealed, toggleReveal, activeStory, completedStories, startStoryGrooming, saveAndNextStory };
+  return { players, castVote, isRevealed, toggleReveal, activeStory, completedStories, startStoryGrooming, saveAndNextStory, triggerRevote, storyStartTime };
 };
