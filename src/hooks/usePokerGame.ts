@@ -3,10 +3,10 @@ import { supabase } from "../lib/supabase";
 import type { Player, CardValue, Story } from "../types/poker";
 
 const getUserId = () => {
-  let id = sessionStorage.getItem("poker_user_id");
+  let id = localStorage.getItem("poker_user_id");
   if (!id) {
     id = Math.random().toString(36).substring(2, 10);
-    sessionStorage.setItem("poker_user_id", id);
+    localStorage.setItem("poker_user_id", id);
   }
   return id;
 };
@@ -81,6 +81,7 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
         const state = roomChannel.presenceState();
         let oldestTime = Infinity;
         let currentHostId: string | null = null;
+        let claimedHostId: string | null = null;
 
         setPlayers((prevPlayers) => {
           const activePlayers: Player[] = [];
@@ -88,6 +89,10 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
             const presenceData = (presenceArray as any[])[0];
             const existingPlayer = prevPlayers.find((p) => p.id === key);
             
+            if (presenceData.isClaimedHost) {
+              claimedHostId = key;
+            }
+
             if (presenceData.joinedAt < oldestTime) {
               oldestTime = presenceData.joinedAt;
               currentHostId = key;
@@ -105,7 +110,7 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
             });
           }
           
-          setHostId(currentHostId);
+          setHostId(claimedHostId || currentHostId);
           activePlayers.sort((a, b) => a.name.localeCompare(b.name));
           return activePlayers;
         });
@@ -140,9 +145,7 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
         }
       })
       .on("broadcast", { event: "request_sync" }, () => {
-        const state = roomChannel.presenceState();
-        const sortedIds = Object.keys(state).sort();
-        if (sortedIds[0] === myUserId) {
+        if (hostId === myUserId || (!hostId && [...players].sort((a, b) => a.name.localeCompare(b.name))[0]?.id === myUserId)) {
           roomChannel.send({
             type: "broadcast",
             event: "sync_response",
@@ -342,6 +345,17 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     }
   }, [players, isRevealed, toggleReveal]);
 
+  const claimHostRole = async () => {
+    if (channelRef.current) {
+      await channelRef.current.track({
+        name: playerName,
+        selectedCard: myCardRef.current,
+        joinedAt: joinedAtRef.current,
+        isClaimedHost: true
+      });
+    }
+  };
+
   return {
     players,
     castVote,
@@ -356,5 +370,6 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     deleteStory,
     hostId,
     endSession,
+    claimHostRole
   };
 };

@@ -50,6 +50,7 @@ export const Board: React.FC<BoardProps> = ({
     deleteStory,
     hostId,
     endSession,
+    claimHostRole,
   } = usePokerGame(roomId, playerName, onLeave);
 
   const isHost = myUserId === hostId;
@@ -131,6 +132,14 @@ export const Board: React.FC<BoardProps> = ({
           <span className="text-neutral-400">
             Playing as <strong className="text-white">{playerName}</strong>
           </span>
+          {!isHost && (
+            <button
+              onClick={claimHostRole}
+              className="px-3 py-1.5 border border-emerald-900/50 bg-emerald-900/10 rounded-lg text-xs text-emerald-400 hover:bg-emerald-900/30 transition-colors cursor-pointer"
+            >
+              Claim Host
+            </button>
+          )}
           {isHost && (
             <button
               onClick={endSession}
