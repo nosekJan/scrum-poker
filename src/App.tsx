@@ -5,47 +5,85 @@ import {
   Route,
   useNavigate,
   useParams,
+  useLocation,
 } from "react-router-dom";
 import { Lobby } from "./components/Lobby";
 import { Board } from "./components/Board";
+import { supabase } from "./lib/supabase";
 
-// 🔥 Wrapper komponent pre hlavnú cestu "/" (prázdna Lobby)
 function HomeRoute() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const errorMsg = location.state?.error;
 
-  const handleJoin = (name: string, roomId: string) => {
+  const handleJoin = (name: string, roomId: string, isCreating: boolean) => {
     localStorage.setItem("kestra_poker_name", name);
-    navigate(`/room/${roomId}`);
+    navigate(`/room/${roomId}`, { state: { isCreating } });
   };
 
-  return <Lobby onJoin={handleJoin} />;
+  return <Lobby onJoin={handleJoin} error={errorMsg} />;
 }
 
-// 🔥 Wrapper komponent pre cestu "/room/:roomId"
 function RoomRoute() {
   const { roomId } = useParams<{ roomId: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [playerName, setPlayerName] = useState<string | null>(null);
+  const [isValidating, setIsValidating] = useState(true);
 
   useEffect(() => {
-    const savedName = localStorage.getItem("kestra_poker_name");
-    if (savedName) {
-      setPlayerName(savedName);
-    }
-  }, []);
+    const checkRoomAccess = async () => {
+      const savedName = localStorage.getItem("kestra_poker_name");
+      if (savedName) {
+        setPlayerName(savedName);
+      }
 
-  // Ak hráč prišiel priamo cez link, ale nemá uložené meno,
-  // zobrazíme mu Lobby a predvyplníme mu roomId.
+      if (location.state?.isCreating) {
+        setIsValidating(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("poker_stories")
+        .select("id")
+        .eq("room_id", roomId)
+        .limit(1);
+
+      if (!error && data && data.length > 0) {
+        setIsValidating(false);
+      } else {
+        navigate("/", {
+          replace: true,
+          state: {
+            error: `Room '${roomId}' does not exist. Please create it first.`,
+          },
+        });
+      }
+    };
+
+    checkRoomAccess();
+  }, [roomId, location.state, navigate]);
+
+  if (isValidating) {
+    return (
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
+        <p className="text-neutral-500 animate-pulse text-sm">
+          Validating room access...
+        </p>
+      </div>
+    );
+  }
+
   if (!playerName) {
     return (
       <Lobby
         initialRoomId={roomId}
-        onJoin={(name, joinedRoomId) => {
+        onJoin={(name, joinedRoomId, isCreating) => {
           localStorage.setItem("kestra_poker_name", name);
           setPlayerName(name);
-          // Ak by si v predvyplnenej URL náhodou prepísal názov izby,
-          // musíme aktualizovať URL
           if (joinedRoomId !== roomId) {
-            window.location.href = `/room/${joinedRoomId}`;
+            navigate(`/room/${joinedRoomId}`, { state: { isCreating } });
           }
         }}
       />
@@ -55,6 +93,7 @@ function RoomRoute() {
   const handleLeave = () => {
     localStorage.removeItem("kestra_poker_name");
     setPlayerName(null);
+    navigate("/");
   };
 
   return (

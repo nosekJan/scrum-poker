@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from "react";
 
 interface LobbyProps {
-  onJoin: (name: string, roomId: string) => void;
+  onJoin: (name: string, roomId: string, isCreating: boolean) => void;
   initialRoomId?: string;
+  error?: string;
 }
 
-export const Lobby: React.FC<LobbyProps> = ({ onJoin, initialRoomId }) => {
+export const Lobby: React.FC<LobbyProps> = ({
+  onJoin,
+  initialRoomId,
+  error,
+}) => {
   const [name, setName] = useState("");
-  // Ak prišli cez priamy odkaz s ID (napr. z pozvánky), vyplníme to za nich.
-  // Ak nie, necháme prázdne.
   const [roomId, setRoomId] = useState(initialRoomId || "");
 
-  // Helper pre náhodný kód
   const generateRandomRoom = () => {
     const secureId =
       typeof crypto !== "undefined" && crypto.randomUUID
@@ -29,10 +31,10 @@ export const Lobby: React.FC<LobbyProps> = ({ onJoin, initialRoomId }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedName = name.trim();
-    const trimmedRoom = roomId.trim().toLowerCase().replace(/\s+/g, "-"); // Čistíme pre URL bezpečnosť
+    const trimmedRoom = roomId.trim().toLowerCase().replace(/\s+/g, "-");
 
     if (trimmedName && trimmedRoom) {
-      onJoin(trimmedName, trimmedRoom);
+      onJoin(trimmedName, trimmedRoom, true);
     }
   };
 
@@ -45,6 +47,12 @@ export const Lobby: React.FC<LobbyProps> = ({ onJoin, initialRoomId }) => {
           </h1>
           <p className="text-neutral-400">Join a planning session</p>
         </div>
+
+        {error && (
+          <div className="mb-6 p-3 bg-red-900/20 border border-red-900/50 rounded-lg text-center text-sm text-red-400">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div className="space-y-1">
@@ -70,7 +78,7 @@ export const Lobby: React.FC<LobbyProps> = ({ onJoin, initialRoomId }) => {
               <button
                 type="button"
                 onClick={generateRandomRoom}
-                className="text-[10px] text-emerald-500 hover:text-emerald-400 font-bold transition-colors"
+                className="text-[10px] text-emerald-500 hover:text-emerald-400 font-bold transition-colors cursor-pointer"
               >
                 Generate Random
               </button>
