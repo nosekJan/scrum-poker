@@ -37,12 +37,10 @@ export const Board: React.FC<BoardProps> = ({
     "☕",
   ];
 
-  // 🔥 Vytiahli sme deleteStory z hooku
   const {
     players,
     castVote,
     isRevealed,
-    toggleReveal,
     activeStory,
     completedStories,
     startStoryGrooming,
@@ -50,7 +48,11 @@ export const Board: React.FC<BoardProps> = ({
     triggerRevote,
     storyStartTime,
     deleteStory,
-  } = usePokerGame(roomId, playerName);
+    hostId,
+    endSession,
+  } = usePokerGame(roomId, playerName, onLeave);
+
+  const isHost = myUserId === hostId;
 
   useEffect(() => {
     if (!isRevealed) {
@@ -129,6 +131,14 @@ export const Board: React.FC<BoardProps> = ({
           <span className="text-neutral-400">
             Playing as <strong className="text-white">{playerName}</strong>
           </span>
+          {isHost && (
+            <button
+              onClick={endSession}
+              className="px-3 py-1.5 border border-red-900/50 bg-red-900/20 rounded-lg text-xs text-red-400 hover:bg-red-900/40 transition-colors cursor-pointer"
+            >
+              End Session
+            </button>
+          )}
           <button
             onClick={onLeave}
             className="px-3 py-1.5 border border-neutral-700 rounded-lg text-xs hover:bg-neutral-800 transition-colors cursor-pointer"
@@ -144,18 +154,22 @@ export const Board: React.FC<BoardProps> = ({
             {isRevealed && (
               <>
                 <div className="flex gap-4">
-                  <button
-                    onClick={() => saveAndNextStory(average)}
-                    className="px-6 py-2 bg-emerald-500 text-white rounded-lg font-bold hover:bg-emerald-600 transition-colors cursor-pointer shadow-lg shadow-emerald-500/20"
-                  >
-                    Save & Next Story
-                  </button>
-                  <button
-                    onClick={triggerRevote}
-                    className="px-6 py-2 bg-neutral-800 border border-neutral-700 text-white rounded-lg font-bold hover:bg-neutral-700 transition-colors cursor-pointer"
-                  >
-                    Re-vote
-                  </button>
+                  {isHost && (
+                    <>
+                      <button
+                        onClick={() => saveAndNextStory(average)}
+                        className="px-6 py-2 bg-emerald-500 text-white rounded-lg font-bold hover:bg-emerald-600 transition-colors cursor-pointer shadow-lg shadow-emerald-500/20"
+                      >
+                        Save & Next Story
+                      </button>
+                      <button
+                        onClick={triggerRevote}
+                        className="px-6 py-2 bg-neutral-800 border border-neutral-700 text-white rounded-lg font-bold hover:bg-neutral-700 transition-colors cursor-pointer"
+                      >
+                        Re-vote
+                      </button>
+                    </>
+                  )}
                 </div>
 
                 <div className="text-center transition-opacity duration-300 flex flex-col items-center gap-1">
@@ -226,8 +240,13 @@ export const Board: React.FC<BoardProps> = ({
                   ) : (
                     "🤔"
                   )}
+                  {player.id === hostId && (
+                    <span className="absolute -top-3.5 -right-3 text-lg transform rotate-12 drop-shadow-md">
+                      👑
+                    </span>
+                  )}
                   {player.id === myUserId && (
-                    <span className="absolute -top-2 -right-2 bg-neutral-800 border border-neutral-700 text-[9px] px-1.5 py-0.5 rounded-full text-neutral-400 font-bold uppercase tracking-wide">
+                    <span className="absolute -top-2 -left-2 bg-neutral-800 border border-neutral-700 text-[9px] px-1.5 py-0.5 rounded-full text-neutral-400 font-bold uppercase tracking-wide">
                       You
                     </span>
                   )}
@@ -303,7 +322,7 @@ export const Board: React.FC<BoardProps> = ({
                       {activeStory}
                     </h3>
                   </div>
-                ) : (
+                ) : isHost ? (
                   <form
                     onSubmit={handleAddStory}
                     className="flex flex-col gap-3 mt-2"
@@ -324,6 +343,12 @@ export const Board: React.FC<BoardProps> = ({
                       Set Active Story
                     </button>
                   </form>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-center px-4">
+                    <p className="text-xs text-neutral-500 animate-pulse">
+                      Waiting for the host to set an active story...
+                    </p>
+                  </div>
                 )}
               </div>
             )}
@@ -357,14 +382,15 @@ export const Board: React.FC<BoardProps> = ({
                             {story.estimate}
                           </span>
                         </div>
-                        {/* 🔥 NOVÉ: Červené mazacie tlačidlo, ktoré sa zjaví po hoveri na riadok */}
-                        <button
-                          onClick={() => deleteStory(story.id)}
-                          className="text-neutral-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded transition-colors cursor-pointer opacity-0 group-hover:opacity-100 font-mono"
-                          title="Delete story from database"
-                        >
-                          ✕
-                        </button>
+                        {isHost && (
+                          <button
+                            onClick={() => deleteStory(story.id)}
+                            className="text-neutral-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded transition-colors cursor-pointer opacity-0 group-hover:opacity-100 font-mono"
+                            title="Delete story from database"
+                          >
+                            ✕
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))
@@ -416,14 +442,15 @@ export const Board: React.FC<BoardProps> = ({
                           {story.estimate}
                         </span>
                       </div>
-                      {/* 🔥 NOVÉ: Tlačidlo aj v záložke 'All' */}
-                      <button
-                        onClick={() => deleteStory(story.id)}
-                        className="text-neutral-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded transition-colors cursor-pointer opacity-0 group-hover:opacity-100 font-mono"
-                        title="Delete story from database"
-                      >
-                        ✕
-                      </button>
+                      {isHost && (
+                        <button
+                          onClick={() => deleteStory(story.id)}
+                          className="text-neutral-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded transition-colors cursor-pointer opacity-0 group-hover:opacity-100 font-mono"
+                          title="Delete story from database"
+                        >
+                          ✕
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}

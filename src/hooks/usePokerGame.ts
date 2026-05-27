@@ -1,12 +1,12 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
-import type { Player, CardValue, Story } from '../types/poker';
+import { useEffect, useState, useRef, useCallback } from "react";
+import { supabase } from "../lib/supabase";
+import type { Player, CardValue, Story } from "../types/poker";
 
 const getUserId = () => {
-  let id = sessionStorage.getItem('poker_user_id');
+  let id = sessionStorage.getItem("poker_user_id");
   if (!id) {
     id = Math.random().toString(36).substring(2, 10);
-    sessionStorage.setItem('poker_user_id', id);
+    sessionStorage.setItem("poker_user_id", id);
   }
   return id;
 };
@@ -15,42 +15,46 @@ export const myUserId = getUserId();
 
 export const formatTime = (ms: number) => {
   const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
-  const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+  const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, "0");
+  const seconds = (totalSeconds % 60).toString().padStart(2, "0");
   return `${minutes}:${seconds}`;
 };
 
-export const usePokerGame = (roomId: string, playerName: string) => {
+export const usePokerGame = (roomId: string, playerName: string, onLeave: () => void) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [isRevealed, setIsRevealed] = useState(false);
   const [activeStory, setActiveStory] = useState<string | null>(null);
   const [completedStories, setCompletedStories] = useState<Story[]>([]);
   const [storyStartTime, setStoryStartTime] = useState<number | null>(null);
-  
+  const [hostId, setHostId] = useState<string | null>(null);
+
   const channelRef = useRef<any>(null);
+  const joinedAtRef = useRef(Date.now());
 
   const roomStateRef = useRef({ isRevealed, activeStory, completedStories, storyStartTime });
+  
   useEffect(() => {
     roomStateRef.current = { isRevealed, activeStory, completedStories, storyStartTime };
   }, [isRevealed, activeStory, completedStories, storyStartTime]);
 
   useEffect(() => {
-    // 🔥 1. NAČÍTANIE Z REÁLNEJ DATABÁZY pri vstupe do roomky
     const fetchStoriesFromDB = async () => {
       const { data, error } = await supabase
-        .from('poker_stories')
-        .select('*')
-        .eq('room_id', roomId)
-        .order('created_at', { ascending: false });
+        .from("poker_stories")
+        .select("*")
+        .eq("room_id", roomId)
+        .order("created_at", { ascending: false });
 
       if (!error && data) {
-        // Mapujeme DB formát (snake_case created_at) na náš camelCase interface
-        const formattedStories: Story[] = data.map(s => ({
+        const formattedStories: Story[] = data.map((s) => ({
           id: s.id,
           title: s.title,
           estimate: s.estimate,
           time: s.time,
-          createdAt: new Date(s.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          createdAt: new Date(s.created_at).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
         }));
         setCompletedStories(formattedStories);
       }
@@ -65,16 +69,26 @@ export const usePokerGame = (roomId: string, playerName: string) => {
     channelRef.current = roomChannel;
 
     roomChannel
-      .on('presence', { event: 'sync' }, () => {
+      .on("presence", { event: "sync" }, () => {
         const state = roomChannel.presenceState();
+        let oldestTime = Infinity;
+        let currentHostId: string | null = null;
+
         setPlayers((prevPlayers) => {
           const activePlayers: Player[] = [];
           for (const [key, presenceArray] of Object.entries(state)) {
             const presenceData = (presenceArray as any[])[0];
-            const existingPlayer = prevPlayers.find(p => p.id === key);
-            const currentCard = existingPlayer && existingPlayer.selectedCard !== null 
-              ? existingPlayer.selectedCard 
-              : (presenceData.selectedCard || null);
+            const existingPlayer = prevPlayers.find((p) => p.id === key);
+            
+            if (presenceData.joinedAt < oldestTime) {
+              oldestTime = presenceData.joinedAt;
+              currentHostId = key;
+            }
+
+            const currentCard =
+              existingPlayer && existingPlayer.selectedCard !== null
+                ? existingPlayer.selectedCard
+                : presenceData.selectedCard || null;
 
             activePlayers.push({
               id: key,
@@ -82,53 +96,69 @@ export const usePokerGame = (roomId: string, playerName: string) => {
               selectedCard: currentCard,
             });
           }
+          
+          setHostId(currentHostId);
           activePlayers.sort((a, b) => a.name.localeCompare(b.name));
           return activePlayers;
         });
       })
-      .on('broadcast', { event: 'vote' }, (payload) => {
+      .on("broadcast", { event: "vote" }, (payload) => {
         const { userId, card } = payload.payload;
-        setPlayers((prev) => prev.map((p) => (p.id === userId ? { ...p, selectedCard: card } : p)));
+        setPlayers((prev) =>
+          prev.map((p) => (p.id === userId ? { ...p, selectedCard: card } : p))
+        );
       })
-      .on('broadcast', { event: 'reveal_state' }, async (payload) => {
-         const reveal = payload.payload.isRevealed;
-         setIsRevealed(reveal);
-         if (!reveal && roomChannel.state === 'joined') {
-             await roomChannel.track({ name: playerName, selectedCard: null });
-         }
+      .on("broadcast", { event: "reveal_state" }, async (payload) => {
+        const reveal = payload.payload.isRevealed;
+        setIsRevealed(reveal);
+        if (!reveal && roomChannel.state === "joined") {
+          await roomChannel.track({ name: playerName, selectedCard: null, joinedAt: joinedAtRef.current });
+        }
       })
-      .on('broadcast', { event: 'story_state' }, (payload) => {
+      .on("broadcast", { event: "story_state" }, (payload) => {
         setActiveStory(payload.payload.activeStory);
         setCompletedStories(payload.payload.completedStories);
         setStoryStartTime(payload.payload.storyStartTime);
         if (payload.payload.resetVotes) {
-          setPlayers(prev => prev.map(p => ({ ...p, selectedCard: null })));
+          setPlayers((prev) => prev.map((p) => ({ ...p, selectedCard: null })));
+          setIsRevealed(false);
         }
       })
-      .on('broadcast', { event: 'revote' }, async () => {
+      .on("broadcast", { event: "revote" }, async () => {
         setIsRevealed(false);
-        setPlayers(prev => prev.map(p => ({ ...p, selectedCard: null })));
-        if (roomChannel.state === 'joined') {
-          await roomChannel.track({ name: playerName, selectedCard: null });
+        setPlayers((prev) => prev.map((p) => ({ ...p, selectedCard: null })));
+        if (roomChannel.state === "joined") {
+          await roomChannel.track({ name: playerName, selectedCard: null, joinedAt: joinedAtRef.current });
         }
       })
-      .on('broadcast', { event: 'request_sync' }, () => {
+      .on("broadcast", { event: "request_sync" }, () => {
         const state = roomChannel.presenceState();
         const sortedIds = Object.keys(state).sort();
         if (sortedIds[0] === myUserId) {
-          roomChannel.send({ type: 'broadcast', event: 'sync_response', payload: roomStateRef.current });
+          roomChannel.send({
+            type: "broadcast",
+            event: "sync_response",
+            payload: roomStateRef.current,
+          });
         }
       })
-      .on('broadcast', { event: 'sync_response' }, (payload) => {
+      .on("broadcast", { event: "sync_response" }, (payload) => {
         setIsRevealed(payload.payload.isRevealed);
         setActiveStory(payload.payload.activeStory);
         setCompletedStories(payload.payload.completedStories);
         setStoryStartTime(payload.payload.storyStartTime);
       })
+      .on("broadcast", { event: "session_ended" }, () => {
+        onLeave();
+      })
       .subscribe(async (status: string) => {
-        if (status === 'SUBSCRIBED') {
-          await roomChannel.track({ name: playerName, selectedCard: null });
-          await roomChannel.send({ type: 'broadcast', event: 'request_sync', payload: {} });
+        if (status === "SUBSCRIBED") {
+          await roomChannel.track({ name: playerName, selectedCard: null, joinedAt: joinedAtRef.current });
+          await roomChannel.send({
+            type: "broadcast",
+            event: "request_sync",
+            payload: {},
+          });
         }
       });
 
@@ -136,24 +166,34 @@ export const usePokerGame = (roomId: string, playerName: string) => {
       supabase.removeChannel(roomChannel);
       channelRef.current = null;
     };
-  }, [roomId, playerName]);
+  }, [roomId, playerName, onLeave]);
 
   const toggleReveal = useCallback(async (reveal: boolean) => {
     setIsRevealed(reveal);
     if (!reveal && channelRef.current) {
-        setPlayers(prev => prev.map(p => ({ ...p, selectedCard: null })));
-        await channelRef.current.track({ name: playerName, selectedCard: null });
+      setPlayers((prev) => prev.map((p) => ({ ...p, selectedCard: null })));
+      await channelRef.current.track({ name: playerName, selectedCard: null, joinedAt: joinedAtRef.current });
     }
     if (channelRef.current) {
-       await channelRef.current.send({ type: 'broadcast', event: 'reveal_state', payload: { isRevealed: reveal } });
+      await channelRef.current.send({
+        type: "broadcast",
+        event: "reveal_state",
+        payload: { isRevealed: reveal },
+      });
     }
   }, [playerName]);
 
   const castVote = async (card: CardValue | null) => {
-    setPlayers((prev) => prev.map((p) => (p.id === myUserId ? { ...p, selectedCard: card } : p)));
+    setPlayers((prev) =>
+      prev.map((p) => (p.id === myUserId ? { ...p, selectedCard: card } : p))
+    );
     if (channelRef.current) {
-      channelRef.current.send({ type: 'broadcast', event: 'vote', payload: { userId: myUserId, card } });
-      channelRef.current.track({ name: playerName, selectedCard: card });
+      channelRef.current.send({
+        type: "broadcast",
+        event: "vote",
+        payload: { userId: myUserId, card },
+      });
+      channelRef.current.track({ name: playerName, selectedCard: card, joinedAt: joinedAtRef.current });
     }
   };
 
@@ -163,44 +203,52 @@ export const usePokerGame = (roomId: string, playerName: string) => {
     setStoryStartTime(startTime);
     if (channelRef.current) {
       await channelRef.current.send({
-        type: 'broadcast',
-        event: 'story_state',
-        payload: { activeStory: title, completedStories, storyStartTime: startTime, resetVotes: false },
+        type: "broadcast",
+        event: "story_state",
+        payload: {
+          activeStory: title,
+          completedStories,
+          storyStartTime: startTime,
+          resetVotes: false,
+        },
       });
     }
   };
 
   const saveAndNextStory = async (estimate: string) => {
     if (!activeStory) return;
-    
-    const finalTime = storyStartTime ? formatTime(Date.now() - storyStartTime) : '00:00';
-    
-    // 🔥 2. ZÁPIS DO REALNEJ DATABÁZY V SUPABASE
+
+    const finalTime = storyStartTime
+      ? formatTime(Date.now() - storyStartTime)
+      : "00:00";
+
     const { data, error } = await supabase
-      .from('poker_stories')
+      .from("poker_stories")
       .insert([
         {
           room_id: roomId,
           title: activeStory,
           estimate: estimate,
-          time: finalTime
-        }
+          time: finalTime,
+        },
       ])
       .select()
       .single();
 
     if (error) {
-      console.error('Failed to save story to database:', error);
+      console.error("Failed to save story to database:", error);
       return;
     }
 
-    // Použijeme reálne ID vygenerované databázou (UUID)
     const newStory: Story = {
       id: data.id,
       title: data.title,
       estimate: data.estimate,
       time: data.time,
-      createdAt: new Date(data.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      createdAt: new Date(data.created_at).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
     };
 
     const updatedCompleted = [newStory, ...completedStories];
@@ -208,66 +256,97 @@ export const usePokerGame = (roomId: string, playerName: string) => {
     setActiveStory(null);
     setStoryStartTime(null);
     setIsRevealed(false);
-    setPlayers(prev => prev.map(p => ({ ...p, selectedCard: null })));
+    setPlayers((prev) => prev.map((p) => ({ ...p, selectedCard: null })));
 
     if (channelRef.current) {
-      await channelRef.current.track({ name: playerName, selectedCard: null });
+      await channelRef.current.track({ name: playerName, selectedCard: null, joinedAt: joinedAtRef.current });
       await channelRef.current.send({
-        type: 'broadcast',
-        event: 'story_state',
-        payload: { activeStory: null, completedStories: updatedCompleted, storyStartTime: null, resetVotes: true },
+        type: "broadcast",
+        event: "story_state",
+        payload: {
+          activeStory: null,
+          completedStories: updatedCompleted,
+          storyStartTime: null,
+          resetVotes: true,
+        },
       });
     }
   };
 
   const triggerRevote = async () => {
     setIsRevealed(false);
-    setPlayers(prev => prev.map(p => ({ ...p, selectedCard: null })));
+    setPlayers((prev) => prev.map((p) => ({ ...p, selectedCard: null })));
     if (channelRef.current) {
-      await channelRef.current.track({ name: playerName, selectedCard: null });
-      await channelRef.current.send({ type: 'broadcast', event: 'revote', payload: {} });
-    }
-  };
-
-  // 🔥 3. NOVÁ FUNKCIA: VYMAZANIE STORKY Z DATABÁZY
-  const deleteStory = async (storyId: string) => {
-    const { error } = await supabase
-      .from('poker_stories')
-      .delete()
-      .eq('id', storyId);
-
-    if (error) {
-      console.error('Failed to delete story from database:', error);
-      return;
-    }
-
-    // Aktualizujeme lokálny stav
-    const updatedCompleted = completedStories.filter(s => s.id !== storyId);
-    setCompletedStories(updatedCompleted);
-
-    // Oznámime to ostatným, aby sa im zoznam okamžite prekreslil
-    if (channelRef.current) {
+      await channelRef.current.track({ name: playerName, selectedCard: null, joinedAt: joinedAtRef.current });
       await channelRef.current.send({
-        type: 'broadcast',
-        event: 'story_state',
-        payload: { activeStory, completedStories: updatedCompleted, storyStartTime, resetVotes: false },
+        type: "broadcast",
+        event: "revote",
+        payload: {},
       });
     }
   };
 
+  const deleteStory = async (storyId: string) => {
+    const { error } = await supabase
+      .from("poker_stories")
+      .delete()
+      .eq("id", storyId);
+
+    if (error) {
+      console.error("Failed to delete story from database:", error);
+      return;
+    }
+
+    const updatedCompleted = completedStories.filter((s) => s.id !== storyId);
+    setCompletedStories(updatedCompleted);
+
+    if (channelRef.current) {
+      await channelRef.current.send({
+        type: "broadcast",
+        event: "story_state",
+        payload: {
+          activeStory,
+          completedStories: updatedCompleted,
+          storyStartTime,
+          resetVotes: false,
+        },
+      });
+    }
+  };
+
+  const endSession = async () => {
+    if (channelRef.current) {
+      await channelRef.current.send({
+        type: "broadcast",
+        event: "session_ended",
+        payload: {},
+      });
+    }
+    onLeave();
+  };
+
   useEffect(() => {
     if (!isRevealed && players.length > 0) {
-      const allVoted = players.every(p => p.selectedCard !== null);
+      const allVoted = players.every((p) => p.selectedCard !== null);
       if (allVoted) {
         toggleReveal(true);
       }
     }
   }, [players, isRevealed, toggleReveal]);
 
-  return { 
-    players, castVote, isRevealed, toggleReveal, 
-    activeStory, completedStories, startStoryGrooming, 
-    saveAndNextStory, triggerRevote, storyStartTime,
-    deleteStory // 🔥 Exportujeme novú funkciu von do UI
+  return {
+    players,
+    castVote,
+    isRevealed,
+    toggleReveal,
+    activeStory,
+    completedStories,
+    startStoryGrooming,
+    saveAndNextStory,
+    triggerRevote,
+    storyStartTime,
+    deleteStory,
+    hostId,
+    endSession,
   };
 };
