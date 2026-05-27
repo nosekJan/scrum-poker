@@ -15,7 +15,6 @@ const myUserId = getUserId();
 
 export const usePokerGame = (roomId: string, playerName: string) => {
   const [players, setPlayers] = useState<Player[]>([]);
-  // 🔥 Nový stav pre karty
   const [isRevealed, setIsRevealed] = useState(false);
   const channelRef = useRef<any>(null);
 
@@ -29,37 +28,48 @@ export const usePokerGame = (roomId: string, playerName: string) => {
     roomChannel
       .on('presence', { event: 'sync' }, () => {
         const state = roomChannel.presenceState();
-        setPlayers((prev) => {
+        
+        setPlayers((prevPlayers) => {
           const activePlayers: Player[] = [];
+          
           for (const [key, presenceArray] of Object.entries(state)) {
             const presenceData = (presenceArray as any[])[0];
-            const existingPlayer = prev.find(p => p.id === key);
+            const existingPlayer = prevPlayers.find(p => p.id === key);
+            
+            // Preferujeme okamžitý lokálny stav (aby to nepreblikovalo), inak berieme z Presence
+            const currentCard = existingPlayer && existingPlayer.selectedCard !== null 
+              ? existingPlayer.selectedCard 
+              : (presenceData.selectedCard || null);
+
             activePlayers.push({
               id: key,
               name: presenceData.name,
-              selectedCard: existingPlayer ? existingPlayer.selectedCard : null,
+              selectedCard: currentCard,
             });
           }
+          
+          activePlayers.sort((a, b) => a.name.localeCompare(b.name));
           return activePlayers;
         });
       })
       .on('broadcast', { event: 'vote' }, (payload) => {
         const { userId, card } = payload.payload;
-        setPlayers((prevPlayers) =>
-          prevPlayers.map((p) => (p.id === userId ? { ...p, selectedCard: card } : p))
+        setPlayers((prev) =>
+          prev.map((p) => (p.id === userId ? { ...p, selectedCard: card } : p))
         );
       })
-      // 🔥 Počúvame správu o odhalení kariet
-      .on('broadcast', { event: 'reveal_state' }, (payload) => {
-         setIsRevealed(payload.payload.isRevealed);
-         // Ak sa robí reset, resetujeme aj karty hráčov
-         if (!payload.payload.isRevealed) {
-            setPlayers(prev => prev.map(p => ({ ...p, selectedCard: null })));
+      .on('broadcast', { event: 'reveal_state' }, async (payload) => {
+         const reveal = payload.payload.isRevealed;
+         setIsRevealed(reveal);
+         
+         if (!reveal) {
+             setPlayers(prev => prev.map(p => ({ ...p, selectedCard: null })));
+             await roomChannel.track({ name: playerName, selectedCard: null });
          }
       })
       .subscribe(async (status: string) => {
         if (status === 'SUBSCRIBED') {
-          await roomChannel.track({ name: playerName });
+          await roomChannel.track({ name: playerName, selectedCard: null });
         }
       });
 
@@ -70,27 +80,33 @@ export const usePokerGame = (roomId: string, playerName: string) => {
   }, [roomId, playerName]);
 
   const castVote = async (card: CardValue | null) => {
+    // 1. Okamžitá lokálna zmena (Optimistic UI)
     setPlayers((prev) =>
       prev.map((p) => (p.id === myUserId ? { ...p, selectedCard: card } : p))
     );
 
     if (channelRef.current) {
-      await channelRef.current.send({
+      // 2. Bleskový Broadcast pre kolegov online
+      channelRef.current.send({
         type: 'broadcast',
         event: 'vote',
         payload: { userId: myUserId, card },
       });
+
+      // 3. Track pre perzistenciu (pre tých, čo sa pripoja neskôr)
+      channelRef.current.track({ name: playerName, selectedCard: card });
     }
   };
 
-  // 🔥 Nová funkcia na zmenu stavu (Odhalenie / Reset)
   const toggleReveal = async (reveal: boolean) => {
     setIsRevealed(reveal);
-    if (!reveal) {
-        setPlayers(prev => prev.map(p => ({ ...p, selectedCard: null })));
-    }
-    
+
     if (channelRef.current) {
+       if (!reveal) {
+           setPlayers(prev => prev.map(p => ({ ...p, selectedCard: null })));
+           await channelRef.current.track({ name: playerName, selectedCard: null });
+       }
+
        await channelRef.current.send({
          type: 'broadcast',
          event: 'reveal_state',

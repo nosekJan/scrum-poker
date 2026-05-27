@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Card } from "./Card";
 import type { CardValue } from "../types/poker";
 import { usePokerGame } from "../hooks/usePokerGame";
@@ -31,13 +31,11 @@ export const Board: React.FC<BoardProps> = ({
     "☕",
   ];
 
-  // 🔥 Vytiahli sme isRevealed a toggleReveal
   const { players, castVote, isRevealed, toggleReveal } = usePokerGame(
     roomId,
     playerName,
   );
 
-  // Ak niekto iný resetne stôl, musíme resetnúť aj náš lokálny výber karty
   useEffect(() => {
     if (!isRevealed) {
       setSelectedCard(null);
@@ -45,13 +43,23 @@ export const Board: React.FC<BoardProps> = ({
   }, [isRevealed]);
 
   const handleCardClick = (value: CardValue) => {
-    // Ak sú karty už odhalené, nemôžeme hlasovať
     if (isRevealed) return;
-
     const newValue = selectedCard === value ? null : value;
     setSelectedCard(newValue);
     castVote(newValue);
   };
+
+  // 🔥 Logika pre výpočet priemeru (ignoruje kávu a otáznik)
+  const average = useMemo(() => {
+    const validVotes = players
+      .map((p) => p.selectedCard)
+      .filter((val) => val !== null && val !== "?" && val !== "☕")
+      .map((val) => parseFloat(val as string));
+
+    if (validVotes.length === 0) return 0;
+    const sum = validVotes.reduce((acc, curr) => acc + curr, 0);
+    return (sum / validVotes.length).toFixed(1);
+  }, [players]);
 
   return (
     <div className="min-h-screen flex flex-col p-6 bg-neutral-950 text-white">
@@ -79,8 +87,7 @@ export const Board: React.FC<BoardProps> = ({
       </header>
 
       <div className="flex-1 max-w-5xl mx-auto w-full flex flex-col items-center">
-        {/* 🔥 Tlačidlo na odhalenie / reset */}
-        <div className="mb-12">
+        <div className="mb-8 flex flex-col items-center gap-4">
           {!isRevealed ? (
             <button
               onClick={() => toggleReveal(true)}
@@ -96,6 +103,14 @@ export const Board: React.FC<BoardProps> = ({
               Start New Vote
             </button>
           )}
+
+          {/* 🔥 Vykreslenie priemeru pod tlačidlom */}
+          {isRevealed && (
+            <div className="text-center transition-opacity duration-300">
+              <p className="text-neutral-400 text-sm mb-1">Average</p>
+              <p className="text-3xl font-bold text-emerald-400">{average}</p>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap content-start justify-center gap-8 mb-12 min-h-[200px] w-full">
@@ -110,7 +125,6 @@ export const Board: React.FC<BoardProps> = ({
                     : "bg-neutral-800 border-neutral-700 text-neutral-500"
                 }`}
               >
-                {/* 🔥 Logika zobrazenia: Ak je odhalené, ukážeme hodnotu. Inak fajku alebo 🤔 */}
                 {isRevealed && player.selectedCard ? (
                   <span className="font-bold text-xl">
                     {player.selectedCard}
@@ -130,7 +144,7 @@ export const Board: React.FC<BoardProps> = ({
       </div>
 
       <div
-        className="mt-auto max-w-3xl mx-auto pb-8 opacity-100 transition-opacity"
+        className="mt-auto max-w-3xl mx-auto pb-8 transition-opacity"
         style={{
           opacity: isRevealed ? 0.5 : 1,
           pointerEvents: isRevealed ? "none" : "auto",
