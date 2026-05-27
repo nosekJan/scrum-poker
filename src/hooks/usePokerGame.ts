@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Player, CardValue } from '../types/poker';
 
@@ -36,7 +36,6 @@ export const usePokerGame = (roomId: string, playerName: string) => {
             const presenceData = (presenceArray as any[])[0];
             const existingPlayer = prevPlayers.find(p => p.id === key);
             
-            // Preferujeme okamžitý lokálny stav (aby to nepreblikovalo), inak berieme z Presence
             const currentCard = existingPlayer && existingPlayer.selectedCard !== null 
               ? existingPlayer.selectedCard 
               : (presenceData.selectedCard || null);
@@ -79,26 +78,8 @@ export const usePokerGame = (roomId: string, playerName: string) => {
     };
   }, [roomId, playerName]);
 
-  const castVote = async (card: CardValue | null) => {
-    // 1. Okamžitá lokálna zmena (Optimistic UI)
-    setPlayers((prev) =>
-      prev.map((p) => (p.id === myUserId ? { ...p, selectedCard: card } : p))
-    );
-
-    if (channelRef.current) {
-      // 2. Bleskový Broadcast pre kolegov online
-      channelRef.current.send({
-        type: 'broadcast',
-        event: 'vote',
-        payload: { userId: myUserId, card },
-      });
-
-      // 3. Track pre perzistenciu (pre tých, čo sa pripoja neskôr)
-      channelRef.current.track({ name: playerName, selectedCard: card });
-    }
-  };
-
-  const toggleReveal = async (reveal: boolean) => {
+  // 🔥 Zabalili sme do useCallback, aby sa dala bezpečne použiť v useEffecte nižšie
+  const toggleReveal = useCallback(async (reveal: boolean) => {
     setIsRevealed(reveal);
 
     if (channelRef.current) {
@@ -113,7 +94,34 @@ export const usePokerGame = (roomId: string, playerName: string) => {
          payload: { isRevealed: reveal },
        });
     }
+  }, [playerName]);
+
+  const castVote = async (card: CardValue | null) => {
+    setPlayers((prev) =>
+      prev.map((p) => (p.id === myUserId ? { ...p, selectedCard: card } : p))
+    );
+
+    if (channelRef.current) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'vote',
+        payload: { userId: myUserId, card },
+      });
+
+      channelRef.current.track({ name: playerName, selectedCard: card });
+    }
   };
+
+  // 🔥 NOVINKA: Auto-Reveal Tracker
+  useEffect(() => {
+    // Ak hra nie je odhalená, máme aspoň jedného hráča a VŠETCI majú vybratú kartu
+    if (!isRevealed && players.length > 0) {
+      const allVoted = players.every(p => p.selectedCard !== null);
+      if (allVoted) {
+        toggleReveal(true);
+      }
+    }
+  }, [players, isRevealed, toggleReveal]);
 
   return { players, castVote, isRevealed, toggleReveal };
 };

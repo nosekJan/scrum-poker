@@ -49,7 +49,6 @@ export const Board: React.FC<BoardProps> = ({
     castVote(newValue);
   };
 
-  // 🔥 Logika pre výpočet priemeru (ignoruje kávu a otáznik)
   const average = useMemo(() => {
     const validVotes = players
       .map((p) => p.selectedCard)
@@ -87,29 +86,22 @@ export const Board: React.FC<BoardProps> = ({
       </header>
 
       <div className="flex-1 max-w-5xl mx-auto w-full flex flex-col items-center">
-        <div className="mb-8 flex flex-col items-center gap-4">
-          {!isRevealed ? (
-            <button
-              onClick={() => toggleReveal(true)}
-              className="px-6 py-2 bg-emerald-500 text-white rounded-lg font-bold hover:bg-emerald-600 transition-colors"
-            >
-              Reveal Cards
-            </button>
-          ) : (
-            <button
-              onClick={() => toggleReveal(false)}
-              className="px-6 py-2 bg-neutral-700 text-white rounded-lg font-bold hover:bg-neutral-600 transition-colors"
-            >
-              Start New Vote
-            </button>
-          )}
-
-          {/* 🔥 Vykreslenie priemeru pod tlačidlom */}
+        {/* Kontajner s min-h drží stabilnú výšku, aby priemer po odhalení neposunul stôl s kartami */}
+        <div className="mb-8 flex flex-col items-center gap-4 min-h-[100px] justify-center">
           {isRevealed && (
-            <div className="text-center transition-opacity duration-300">
-              <p className="text-neutral-400 text-sm mb-1">Average</p>
-              <p className="text-3xl font-bold text-emerald-400">{average}</p>
-            </div>
+            <>
+              <button
+                onClick={() => toggleReveal(false)}
+                className="px-6 py-2 bg-neutral-700 text-white rounded-lg font-bold hover:bg-neutral-600 transition-colors"
+              >
+                Start New Vote
+              </button>
+
+              <div className="text-center transition-opacity duration-300">
+                <p className="text-neutral-400 text-sm mb-1">Average</p>
+                <p className="text-3xl font-bold text-emerald-400">{average}</p>
+              </div>
+            </>
           )}
         </div>
 
