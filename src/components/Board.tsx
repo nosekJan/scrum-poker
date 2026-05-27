@@ -30,6 +30,11 @@ export const Board: React.FC<BoardProps> = ({
     "?",
     "☕",
   ];
+  const [shouldCrash, setShouldCrash] = useState(false);
+
+  if (shouldCrash) {
+    throw new Error("Simulated real-time database connection failure!");
+  }
 
   const { players, castVote, isRevealed, toggleReveal } = usePokerGame(
     roomId,
@@ -88,6 +93,12 @@ export const Board: React.FC<BoardProps> = ({
   return (
     <div className="min-h-screen flex flex-col p-6 bg-neutral-950 text-white">
       <header className="flex justify-between items-center mb-12 max-w-5xl mx-auto w-full">
+        <button
+          onClick={() => setShouldCrash(true)}
+          className="px-3 py-1.5 bg-red-900/30 border border-red-500/50 rounded-lg text-xs text-red-400 hover:bg-red-900/50 transition-colors"
+        >
+          Simulate Crash
+        </button>
         <div className="flex items-center gap-6">
           <h1 className="text-xl font-bold">
             Kestra Poker <span className="text-emerald-500">.</span>
