@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card } from "./Card";
 import type { CardValue } from "../types/poker";
 import { usePokerGame } from "../hooks/usePokerGame";
@@ -31,15 +31,26 @@ export const Board: React.FC<BoardProps> = ({
     "☕",
   ];
 
-  // 🔥 Vytiahneme aj novú funkciu castVote
-  const { players, castVote } = usePokerGame(roomId, playerName);
+  // 🔥 Vytiahli sme isRevealed a toggleReveal
+  const { players, castVote, isRevealed, toggleReveal } = usePokerGame(
+    roomId,
+    playerName,
+  );
 
-  // 🔥 Táto funkcia sa zavolá pri kliknutí na kartu
+  // Ak niekto iný resetne stôl, musíme resetnúť aj náš lokálny výber karty
+  useEffect(() => {
+    if (!isRevealed) {
+      setSelectedCard(null);
+    }
+  }, [isRevealed]);
+
   const handleCardClick = (value: CardValue) => {
-    // Ak klikneš na tú istú kartu, odznačí sa (pošle sa null)
+    // Ak sú karty už odhalené, nemôžeme hlasovať
+    if (isRevealed) return;
+
     const newValue = selectedCard === value ? null : value;
     setSelectedCard(newValue);
-    castVote(newValue); // Pošleme nový stav do Supabase!
+    castVote(newValue);
   };
 
   return (
@@ -67,26 +78,64 @@ export const Board: React.FC<BoardProps> = ({
         </div>
       </header>
 
-      <div className="flex-1 max-w-5xl mx-auto w-full flex flex-wrap content-start justify-center gap-8 mb-12 min-h-[200px]">
-        {players.map((player) => (
-          <div key={player.id} className="flex flex-col items-center gap-3">
-            <div
-              className={`w-16 h-24 rounded-xl border-2 flex items-center justify-center transition-all ${
-                player.selectedCard
-                  ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]"
-                  : "bg-neutral-800 border-neutral-700 text-neutral-500"
-              }`}
+      <div className="flex-1 max-w-5xl mx-auto w-full flex flex-col items-center">
+        {/* 🔥 Tlačidlo na odhalenie / reset */}
+        <div className="mb-12">
+          {!isRevealed ? (
+            <button
+              onClick={() => toggleReveal(true)}
+              className="px-6 py-2 bg-emerald-500 text-white rounded-lg font-bold hover:bg-emerald-600 transition-colors"
             >
-              {player.selectedCard ? "✔️" : "🤔"}
+              Reveal Cards
+            </button>
+          ) : (
+            <button
+              onClick={() => toggleReveal(false)}
+              className="px-6 py-2 bg-neutral-700 text-white rounded-lg font-bold hover:bg-neutral-600 transition-colors"
+            >
+              Start New Vote
+            </button>
+          )}
+        </div>
+
+        <div className="flex flex-wrap content-start justify-center gap-8 mb-12 min-h-[200px] w-full">
+          {players.map((player) => (
+            <div key={player.id} className="flex flex-col items-center gap-3">
+              <div
+                className={`w-16 h-24 rounded-xl border-2 flex items-center justify-center transition-all ${
+                  player.selectedCard
+                    ? isRevealed
+                      ? "bg-emerald-500 border-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]"
+                      : "bg-emerald-500/20 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                    : "bg-neutral-800 border-neutral-700 text-neutral-500"
+                }`}
+              >
+                {/* 🔥 Logika zobrazenia: Ak je odhalené, ukážeme hodnotu. Inak fajku alebo 🤔 */}
+                {isRevealed && player.selectedCard ? (
+                  <span className="font-bold text-xl">
+                    {player.selectedCard}
+                  </span>
+                ) : player.selectedCard ? (
+                  "✔️"
+                ) : (
+                  "🤔"
+                )}
+              </div>
+              <span className="text-sm font-medium text-neutral-300">
+                {player.name}
+              </span>
             </div>
-            <span className="text-sm font-medium text-neutral-300">
-              {player.name}
-            </span>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
-      <div className="mt-auto max-w-3xl mx-auto pb-8">
+      <div
+        className="mt-auto max-w-3xl mx-auto pb-8 opacity-100 transition-opacity"
+        style={{
+          opacity: isRevealed ? 0.5 : 1,
+          pointerEvents: isRevealed ? "none" : "auto",
+        }}
+      >
         <p className="text-center text-sm text-neutral-400 mb-4">
           Choose your estimate
         </p>
@@ -96,7 +145,6 @@ export const Board: React.FC<BoardProps> = ({
               key={value}
               value={value}
               isSelected={selectedCard === value}
-              // 🔥 Tu sme zmenili onClick
               onClick={() => handleCardClick(value)}
             />
           ))}
