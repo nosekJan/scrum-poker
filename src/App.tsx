@@ -3,23 +3,27 @@ import {
   BrowserRouter,
   Routes,
   Route,
-  Navigate,
+  useNavigate,
   useParams,
 } from "react-router-dom";
 import { Lobby } from "./components/Lobby";
 import { Board } from "./components/Board";
 
-// Jednoduchá utilita na vygenerovanie náhodného 6-miestneho ID miestnosti
-const generateRoomId = () => Math.random().toString(36).substring(2, 8);
+// 🔥 Wrapper komponent pre hlavnú cestu "/" (prázdna Lobby)
+function HomeRoute() {
+  const navigate = useNavigate();
 
-// Komponent pre hlavnú stránku - iba ťa prehodí do novej miestnosti
-function Home() {
-  return <Navigate to={`/room/${generateRoomId()}`} replace />;
+  const handleJoin = (name: string, roomId: string) => {
+    localStorage.setItem("kestra_poker_name", name);
+    navigate(`/room/${roomId}`);
+  };
+
+  return <Lobby onJoin={handleJoin} />;
 }
 
-// Komponent pre samotnú miestnosť
-function Room() {
-  const { roomId } = useParams<{ roomId: string }>(); // Vytiahneme ID miestnosti z URL
+// 🔥 Wrapper komponent pre cestu "/room/:roomId"
+function RoomRoute() {
+  const { roomId } = useParams<{ roomId: string }>();
   const [playerName, setPlayerName] = useState<string | null>(null);
 
   useEffect(() => {
@@ -29,21 +33,30 @@ function Room() {
     }
   }, []);
 
-  const handleJoin = (name: string) => {
-    localStorage.setItem("kestra_poker_name", name);
-    setPlayerName(name);
-  };
+  // Ak hráč prišiel priamo cez link, ale nemá uložené meno,
+  // zobrazíme mu Lobby a predvyplníme mu roomId.
+  if (!playerName) {
+    return (
+      <Lobby
+        initialRoomId={roomId}
+        onJoin={(name, joinedRoomId) => {
+          localStorage.setItem("kestra_poker_name", name);
+          setPlayerName(name);
+          // Ak by si v predvyplnenej URL náhodou prepísal názov izby,
+          // musíme aktualizovať URL
+          if (joinedRoomId !== roomId) {
+            window.location.href = `/room/${joinedRoomId}`;
+          }
+        }}
+      />
+    );
+  }
 
   const handleLeave = () => {
     localStorage.removeItem("kestra_poker_name");
     setPlayerName(null);
   };
 
-  if (!playerName) {
-    return <Lobby onJoin={handleJoin} />;
-  }
-
-  // Zostáva iba JEDEN čistý return, ktorý posiela všetky potrebné dáta do stola
   return (
     <Board roomId={roomId!} playerName={playerName} onLeave={handleLeave} />
   );
@@ -53,8 +66,8 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/room/:roomId" element={<Room />} />
+        <Route path="/" element={<HomeRoute />} />
+        <Route path="/room/:roomId" element={<RoomRoute />} />
       </Routes>
     </BrowserRouter>
   );

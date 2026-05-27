@@ -13,7 +13,6 @@ const getUserId = () => {
 
 export const myUserId = getUserId();
 
-// 🔥 Helper na formátovanie času do histórie
 export const formatTime = (ms: number) => {
   const totalSeconds = Math.floor(ms / 1000);
   const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
@@ -26,7 +25,7 @@ export const usePokerGame = (roomId: string, playerName: string) => {
   const [isRevealed, setIsRevealed] = useState(false);
   const [activeStory, setActiveStory] = useState<string | null>(null);
   const [completedStories, setCompletedStories] = useState<Story[]>([]);
-  const [storyStartTime, setStoryStartTime] = useState<number | null>(null); // 🔥 NOVÉ
+  const [storyStartTime, setStoryStartTime] = useState<number | null>(null);
   
   const channelRef = useRef<any>(null);
 
@@ -36,11 +35,28 @@ export const usePokerGame = (roomId: string, playerName: string) => {
   }, [isRevealed, activeStory, completedStories, storyStartTime]);
 
   useEffect(() => {
-    // 🔥 Načítanie simulovanej perzistencie (z localStorage)
-    const savedHistory = localStorage.getItem(`poker_history_${roomId}`);
-    if (savedHistory) {
-      setCompletedStories(JSON.parse(savedHistory));
-    }
+    // 🔥 1. NAČÍTANIE Z REÁLNEJ DATABÁZY pri vstupe do roomky
+    const fetchStoriesFromDB = async () => {
+      const { data, error } = await supabase
+        .from('poker_stories')
+        .select('*')
+        .eq('room_id', roomId)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        // Mapujeme DB formát (snake_case created_at) na náš camelCase interface
+        const formattedStories: Story[] = data.map(s => ({
+          id: s.id,
+          title: s.title,
+          estimate: s.estimate,
+          time: s.time,
+          createdAt: new Date(s.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }));
+        setCompletedStories(formattedStories);
+      }
+    };
+
+    fetchStoriesFromDB();
 
     const roomChannel = supabase.channel(`room_${roomId}`, {
       config: { presence: { key: myUserId } },
@@ -84,12 +100,11 @@ export const usePokerGame = (roomId: string, playerName: string) => {
       .on('broadcast', { event: 'story_state' }, (payload) => {
         setActiveStory(payload.payload.activeStory);
         setCompletedStories(payload.payload.completedStories);
-        setStoryStartTime(payload.payload.storyStartTime); // 🔥 Syncujeme čas
+        setStoryStartTime(payload.payload.storyStartTime);
         if (payload.payload.resetVotes) {
           setPlayers(prev => prev.map(p => ({ ...p, selectedCard: null })));
         }
       })
-      // 🔥 NOVÉ: Odchytávame Re-Vote
       .on('broadcast', { event: 'revote' }, async () => {
         setIsRevealed(false);
         setPlayers(prev => prev.map(p => ({ ...p, selectedCard: null })));
@@ -158,15 +173,34 @@ export const usePokerGame = (roomId: string, playerName: string) => {
   const saveAndNextStory = async (estimate: string) => {
     if (!activeStory) return;
     
-    // Zistíme finálny čas
     const finalTime = storyStartTime ? formatTime(Date.now() - storyStartTime) : '00:00';
     
+    // 🔥 2. ZÁPIS DO REALNEJ DATABÁZY V SUPABASE
+    const { data, error } = await supabase
+      .from('poker_stories')
+      .insert([
+        {
+          room_id: roomId,
+          title: activeStory,
+          estimate: estimate,
+          time: finalTime
+        }
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Failed to save story to database:', error);
+      return;
+    }
+
+    // Použijeme reálne ID vygenerované databázou (UUID)
     const newStory: Story = {
-      id: Math.random().toString(36).substring(2, 9),
-      title: activeStory,
-      estimate,
-      time: finalTime,
-      createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      id: data.id,
+      title: data.title,
+      estimate: data.estimate,
+      time: data.time,
+      createdAt: new Date(data.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
     const updatedCompleted = [newStory, ...completedStories];
@@ -175,9 +209,6 @@ export const usePokerGame = (roomId: string, playerName: string) => {
     setStoryStartTime(null);
     setIsRevealed(false);
     setPlayers(prev => prev.map(p => ({ ...p, selectedCard: null })));
-    
-    // 🔥 Uloženie do pamäte prehliadača (krok pred databázou)
-    localStorage.setItem(`poker_history_${roomId}`, JSON.stringify(updatedCompleted));
 
     if (channelRef.current) {
       await channelRef.current.track({ name: playerName, selectedCard: null });
@@ -189,13 +220,38 @@ export const usePokerGame = (roomId: string, playerName: string) => {
     }
   };
 
-  // 🔥 NOVÉ: Vyvolanie Re-vote
   const triggerRevote = async () => {
     setIsRevealed(false);
     setPlayers(prev => prev.map(p => ({ ...p, selectedCard: null })));
     if (channelRef.current) {
       await channelRef.current.track({ name: playerName, selectedCard: null });
       await channelRef.current.send({ type: 'broadcast', event: 'revote', payload: {} });
+    }
+  };
+
+  // 🔥 3. NOVÁ FUNKCIA: VYMAZANIE STORKY Z DATABÁZY
+  const deleteStory = async (storyId: string) => {
+    const { error } = await supabase
+      .from('poker_stories')
+      .delete()
+      .eq('id', storyId);
+
+    if (error) {
+      console.error('Failed to delete story from database:', error);
+      return;
+    }
+
+    // Aktualizujeme lokálny stav
+    const updatedCompleted = completedStories.filter(s => s.id !== storyId);
+    setCompletedStories(updatedCompleted);
+
+    // Oznámime to ostatným, aby sa im zoznam okamžite prekreslil
+    if (channelRef.current) {
+      await channelRef.current.send({
+        type: 'broadcast',
+        event: 'story_state',
+        payload: { activeStory, completedStories: updatedCompleted, storyStartTime, resetVotes: false },
+      });
     }
   };
 
@@ -208,5 +264,10 @@ export const usePokerGame = (roomId: string, playerName: string) => {
     }
   }, [players, isRevealed, toggleReveal]);
 
-  return { players, castVote, isRevealed, toggleReveal, activeStory, completedStories, startStoryGrooming, saveAndNextStory, triggerRevote, storyStartTime };
+  return { 
+    players, castVote, isRevealed, toggleReveal, 
+    activeStory, completedStories, startStoryGrooming, 
+    saveAndNextStory, triggerRevote, storyStartTime,
+    deleteStory // 🔥 Exportujeme novú funkciu von do UI
+  };
 };

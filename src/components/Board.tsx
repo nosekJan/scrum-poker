@@ -19,7 +19,7 @@ export const Board: React.FC<BoardProps> = ({
   const [selectedCard, setSelectedCard] = useState<CardValue | null>(null);
   const [storyInput, setStoryInput] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("active");
-  const [timerDisplay, setTimerDisplay] = useState("00:00"); // 🔥 NOVÉ
+  const [timerDisplay, setTimerDisplay] = useState("00:00");
 
   const cards: CardValue[] = [
     "0",
@@ -37,6 +37,7 @@ export const Board: React.FC<BoardProps> = ({
     "☕",
   ];
 
+  // 🔥 Vytiahli sme deleteStory z hooku
   const {
     players,
     castVote,
@@ -48,6 +49,7 @@ export const Board: React.FC<BoardProps> = ({
     saveAndNextStory,
     triggerRevote,
     storyStartTime,
+    deleteStory,
   } = usePokerGame(roomId, playerName);
 
   useEffect(() => {
@@ -56,7 +58,6 @@ export const Board: React.FC<BoardProps> = ({
     }
   }, [isRevealed]);
 
-  // 🔥 NOVÉ: Lokálne Stopky
   useEffect(() => {
     if (!activeStory || !storyStartTime) {
       setTimerDisplay("00:00");
@@ -149,7 +150,6 @@ export const Board: React.FC<BoardProps> = ({
                   >
                     Save & Next Story
                   </button>
-                  {/* 🔥 NOVÉ: Tlačidlo Re-vote */}
                   <button
                     onClick={triggerRevote}
                     className="px-6 py-2 bg-neutral-800 border border-neutral-700 text-white rounded-lg font-bold hover:bg-neutral-700 transition-colors cursor-pointer"
@@ -295,7 +295,6 @@ export const Board: React.FC<BoardProps> = ({
                       <p className="text-neutral-500 text-[10px] font-bold uppercase tracking-wider">
                         Grooming Now
                       </p>
-                      {/* 🔥 NOVÉ: Živé stopky */}
                       <span className="text-emerald-400/80 font-mono text-xs">
                         {timerDisplay}
                       </span>
@@ -339,7 +338,7 @@ export const Board: React.FC<BoardProps> = ({
                   completedStories.map((story) => (
                     <div
                       key={story.id}
-                      className="bg-neutral-950/60 border border-neutral-900/80 rounded-xl p-3 flex justify-between items-center gap-3"
+                      className="group bg-neutral-950/60 border border-neutral-900/80 rounded-xl p-3 flex justify-between items-center gap-3 transition-colors hover:bg-neutral-950"
                     >
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-white font-medium truncate">
@@ -350,7 +349,6 @@ export const Board: React.FC<BoardProps> = ({
                         </span>
                       </div>
                       <div className="flex items-center gap-3">
-                        {/* 🔥 NOVÉ: Ukazujeme čas */}
                         <span className="text-[10px] text-neutral-500 font-mono">
                           {story.time}
                         </span>
@@ -359,6 +357,14 @@ export const Board: React.FC<BoardProps> = ({
                             {story.estimate}
                           </span>
                         </div>
+                        {/* 🔥 NOVÉ: Červené mazacie tlačidlo, ktoré sa zjaví po hoveri na riadok */}
+                        <button
+                          onClick={() => deleteStory(story.id)}
+                          className="text-neutral-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded transition-colors cursor-pointer opacity-0 group-hover:opacity-100 font-mono"
+                          title="Delete story from database"
+                        >
+                          ✕
+                        </button>
                       </div>
                     </div>
                   ))
@@ -382,7 +388,7 @@ export const Board: React.FC<BoardProps> = ({
                       <span className="text-[10px] text-neutral-500 font-mono">
                         {timerDisplay}
                       </span>
-                      <div className="bg-neutral-900 border border-neutral-800 px-2.5 py-1 rounded-md text-neutral-500 text-xs">
+                      <div className="bg-neutral-900 border border-neutral-800 px-2.5 py-1 rounded-md text-neutral-500 text-xs min-w-[36px] text-center">
                         -
                       </div>
                     </div>
@@ -391,7 +397,7 @@ export const Board: React.FC<BoardProps> = ({
                 {completedStories.map((story) => (
                   <div
                     key={story.id}
-                    className="bg-neutral-950/60 border border-neutral-900/80 rounded-xl p-3 flex justify-between items-center gap-3"
+                    className="group bg-neutral-950/60 border border-neutral-900/80 rounded-xl p-3 flex justify-between items-center gap-3 transition-colors hover:bg-neutral-950"
                   >
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-white font-medium truncate">
@@ -410,6 +416,14 @@ export const Board: React.FC<BoardProps> = ({
                           {story.estimate}
                         </span>
                       </div>
+                      {/* 🔥 NOVÉ: Tlačidlo aj v záložke 'All' */}
+                      <button
+                        onClick={() => deleteStory(story.id)}
+                        className="text-neutral-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded transition-colors cursor-pointer opacity-0 group-hover:opacity-100 font-mono"
+                        title="Delete story from database"
+                      >
+                        ✕
+                      </button>
                     </div>
                   </div>
                 ))}
