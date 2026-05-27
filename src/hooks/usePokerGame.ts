@@ -30,12 +30,20 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
 
   const channelRef = useRef<any>(null);
   const joinedAtRef = useRef(Date.now());
+  const myCardRef = useRef<CardValue | null>(null);
 
   const roomStateRef = useRef({ isRevealed, activeStory, completedStories, storyStartTime });
   
   useEffect(() => {
     roomStateRef.current = { isRevealed, activeStory, completedStories, storyStartTime };
   }, [isRevealed, activeStory, completedStories, storyStartTime]);
+
+  const me = players.find((p) => p.id === myUserId);
+  useEffect(() => {
+    if (me) {
+      myCardRef.current = me.selectedCard;
+    }
+  }, [me]);
 
   useEffect(() => {
     const fetchStoriesFromDB = async () => {
@@ -153,7 +161,7 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
       })
       .subscribe(async (status: string) => {
         if (status === "SUBSCRIBED") {
-          await roomChannel.track({ name: playerName, selectedCard: null, joinedAt: joinedAtRef.current });
+          await roomChannel.track({ name: playerName, selectedCard: myCardRef.current, joinedAt: joinedAtRef.current });
           await roomChannel.send({
             type: "broadcast",
             event: "request_sync",
