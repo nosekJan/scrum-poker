@@ -26,7 +26,12 @@ export const Lobby: React.FC<LobbyProps> = ({
   useEffect(() => {
     const savedName = localStorage.getItem("kestra_poker_name");
     if (savedName) setName(savedName);
-  }, []);
+
+    if (!initialRoomId) {
+      const savedRoom = localStorage.getItem("kestra_poker_room");
+      if (savedRoom) setRoomId(savedRoom);
+    }
+  }, [initialRoomId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +39,8 @@ export const Lobby: React.FC<LobbyProps> = ({
     const trimmedRoom = roomId.trim().toLowerCase().replace(/\s+/g, "-");
 
     if (trimmedName && trimmedRoom) {
+      localStorage.setItem("kestra_poker_name", trimmedName);
+      localStorage.setItem("kestra_poker_room", trimmedRoom);
       onJoin(trimmedName, trimmedRoom, true);
     }
   };

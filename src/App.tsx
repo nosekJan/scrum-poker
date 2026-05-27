@@ -18,6 +18,7 @@ function HomeRoute() {
 
   const handleJoin = (name: string, roomId: string, isCreating: boolean) => {
     localStorage.setItem("kestra_poker_name", name);
+    localStorage.setItem("kestra_poker_room", roomId);
     navigate(`/room/${roomId}`, { state: { isCreating } });
   };
 
@@ -81,6 +82,7 @@ function RoomRoute() {
         initialRoomId={roomId}
         onJoin={(name, joinedRoomId, isCreating) => {
           localStorage.setItem("kestra_poker_name", name);
+          localStorage.setItem("kestra_poker_room", joinedRoomId);
           setPlayerName(name);
           if (joinedRoomId !== roomId) {
             navigate(`/room/${joinedRoomId}`, { state: { isCreating } });
@@ -91,7 +93,6 @@ function RoomRoute() {
   }
 
   const handleLeave = () => {
-    localStorage.removeItem("kestra_poker_name");
     setPlayerName(null);
     navigate("/");
   };
