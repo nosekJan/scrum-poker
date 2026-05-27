@@ -10,3 +10,10 @@ export interface GameState {
   roomId: string;
   status: 'voting' | 'revealed';
 }
+
+export interface Story {
+  id: string;
+  title: string;
+  estimate: string;
+  createdAt: string;
+}
