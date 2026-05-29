@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { Card } from "../Card";
 import { usePoker } from "../../context/PokerContext";
+import { myUserId } from "../../hooks/usePokerGame";
 import type { CardValue } from "../../types/poker";
 
 export const VotingDeck: React.FC = () => {
   const [selectedCard, setSelectedCard] = useState<CardValue | null>(null);
-  const { isRevealed, activeStory, castVote } = usePoker();
+  const {
+    isRevealed,
+    activeStory,
+    castVote,
+    votesSnapshot,
+    players,
+    storyStartTime,
+  } = usePoker();
 
   const cards: CardValue[] = [
     "0",
@@ -36,18 +44,40 @@ export const VotingDeck: React.FC = () => {
     castVote(newValue);
   };
 
+  const me = players.find((p) => p.id === myUserId);
+  const isSpectator =
+    storyStartTime !== null && me && me.joinedAt > storyStartTime;
+
+  const amIInThisRound = votesSnapshot
+    ? votesSnapshot.some((p) => p.id === myUserId)
+    : true;
+
+  if (isRevealed && !amIInThisRound) {
+    return (
+      <div className="mt-auto max-w-3xl mx-auto pb-4">
+        <p className="text-center text-sm text-neutral-500 font-medium bg-neutral-900/50 py-3 px-6 rounded-lg border border-neutral-800">
+          The round is currently being evaluated. Please wait for the next story
+          to begin...
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div
       className="mt-auto max-w-3xl mx-auto pb-4 transition-all duration-300"
       style={{
-        opacity: !activeStory || isRevealed ? 0.3 : 1,
-        pointerEvents: !activeStory || isRevealed ? "none" : "auto",
+        opacity: !activeStory || isRevealed || isSpectator ? 0.3 : 1,
+        pointerEvents:
+          !activeStory || isRevealed || isSpectator ? "none" : "auto",
       }}
     >
       <p className="text-center text-xs text-neutral-400 mb-3">
         {!activeStory
           ? "Set an active story to start voting"
-          : "Choose your estimate"}
+          : isSpectator
+            ? "You joined mid-round. Please wait for the next round..."
+            : "Choose your estimate"}
       </p>
       <div className="flex flex-wrap gap-2.5 justify-center">
         {cards.map((value) => (

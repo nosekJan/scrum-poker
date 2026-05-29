@@ -3,13 +3,26 @@ import { usePoker } from "../../context/PokerContext";
 import { myUserId } from "../../hooks/usePokerGame";
 
 export const PlayerDesk: React.FC = () => {
-  const { players, isRevealed, saveAndNextStory, triggerRevote, hostId } =
-    usePoker();
+  const {
+    players,
+    votesSnapshot,
+    isRevealed,
+    saveAndNextStory,
+    triggerRevote,
+    hostId,
+  } = usePoker();
 
   const isHost = myUserId === hostId;
 
+  const displayedPlayers = useMemo(() => {
+    if (isRevealed && votesSnapshot) {
+      return votesSnapshot.filter((sp) => players.some((p) => p.id === sp.id));
+    }
+    return players;
+  }, [isRevealed, votesSnapshot, players]);
+
   const average = useMemo(() => {
-    const validVotes = players
+    const validVotes = displayedPlayers
       .map((p) => p.selectedCard)
       .filter((val) => val !== null && val !== "?" && val !== "☕")
       .map((val) => parseFloat(val as string));
@@ -17,13 +30,13 @@ export const PlayerDesk: React.FC = () => {
     return (
       validVotes.reduce((acc, curr) => acc + curr, 0) / validVotes.length
     ).toFixed(1);
-  }, [players]);
+  }, [displayedPlayers]);
 
   const voteStats = useMemo(() => {
     if (!isRevealed) return [];
     const stats: Record<string, number> = {};
     let totalVotes = 0;
-    players.forEach((p) => {
+    displayedPlayers.forEach((p) => {
       if (p.selectedCard) {
         stats[p.selectedCard] = (stats[p.selectedCard] || 0) + 1;
         totalVotes++;
@@ -37,7 +50,7 @@ export const PlayerDesk: React.FC = () => {
         percentage: Math.round((count / totalVotes) * 100),
       }))
       .sort((a, b) => b.count - a.count);
-  }, [players, isRevealed]);
+  }, [displayedPlayers, isRevealed]);
 
   return (
     <div className="lg:col-span-2 flex flex-col items-center">
@@ -93,8 +106,8 @@ export const PlayerDesk: React.FC = () => {
         )}
 
         {!isRevealed &&
-          players.length > 0 &&
-          !players.every((p) => p.selectedCard !== null) && (
+          displayedPlayers.length > 0 &&
+          !displayedPlayers.every((p) => p.selectedCard !== null) && (
             <p className="text-neutral-500 text-sm animate-pulse">
               Waiting for all players to vote...
             </p>
@@ -102,7 +115,7 @@ export const PlayerDesk: React.FC = () => {
       </div>
 
       <div className="flex flex-wrap content-start justify-center gap-6 mb-12 min-h-[180px] w-full">
-        {players.map((player) => (
+        {displayedPlayers.map((player) => (
           <div key={player.id} className="flex flex-col items-center gap-2.5">
             <div
               className={`group w-14 h-20 rounded-xl border flex items-center justify-center transition-all duration-300 relative ${
@@ -132,7 +145,7 @@ export const PlayerDesk: React.FC = () => {
               )}
             </div>
             <span className="text-xs font-medium text-neutral-400 max-w-[80px] truncate text-center">
-              {player.name}
+              ={player.name}
             </span>
           </div>
         ))}

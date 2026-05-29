@@ -4,6 +4,7 @@ export interface Player {
   id: string;
   name: string;
   selectedCard: CardValue | null;
+  joinedAt: number;
 }
 
 export interface GameState {

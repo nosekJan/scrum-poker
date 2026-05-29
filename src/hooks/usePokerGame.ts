@@ -9,6 +9,7 @@ export { myUserId, formatTime } from "../utils/poker";
 export const usePokerGame = (roomId: string, playerName: string, onLeave: () => void) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [isRevealed, setIsRevealed] = useState(false);
+  const [votesSnapshot, setVotesSnapshot] = useState<Player[] | null>(null);
   const [hostId, setHostId] = useState<string | null>(null);
 
   const {
@@ -30,6 +31,8 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     setPlayers,
     isRevealed,
     setIsRevealed,
+    votesSnapshot,
+    setVotesSnapshot,
     setHostId,
     activeStory,
     setActiveStory,
@@ -39,22 +42,34 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     setStoryStartTime,
   });
 
-  const toggleReveal = useCallback((reveal: boolean) => {
+  const toggleReveal = useCallback(async (reveal: boolean) => {
     setIsRevealed(reveal);
-    if (!reveal && channelRef.current) {
+    let currentSnapshot: Player[] | null = null;
+
+    if (reveal) {
+      currentSnapshot = [...players];
+      setVotesSnapshot(currentSnapshot);
+    } else {
+      setVotesSnapshot(null);
       setPlayers((prev) => prev.map((p) => ({ ...p, selectedCard: null })));
-      updatePresence({ selectedCard: null });
+      await updatePresence({ selectedCard: null, voteCastAt: null });
     }
+
     if (channelRef.current) {
       channelRef.current.send({
         type: "broadcast",
         event: "reveal_state",
-        payload: { isRevealed: reveal },
+        payload: { isRevealed: reveal, votesSnapshot: currentSnapshot },
       });
     }
-  }, [channelRef, updatePresence]);
+  }, [channelRef, updatePresence, players]);
 
   const castVote = (card: CardValue | null) => {
+    const me = players.find((p) => p.id === myUserId);
+    if (storyStartTime !== null && me && me.joinedAt > storyStartTime) {
+      return;
+    }
+
     setPlayers((prev) => prev.map((p) => (p.id === myUserId ? { ...p, selectedCard: card } : p)));
     if (channelRef.current) {
       channelRef.current.send({
@@ -62,7 +77,7 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
         event: "vote",
         payload: { userId: myUserId, card },
       });
-      updatePresence({ selectedCard: card });
+      updatePresence({ selectedCard: card, voteCastAt: card ? Date.now() : null });
     }
   };
 
@@ -83,9 +98,10 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     const updatedCompleted = await saveStoryToDB(estimate);
     if (!updatedCompleted) return;
     setIsRevealed(false);
+    setVotesSnapshot(null);
     setPlayers((prev) => prev.map((p) => ({ ...p, selectedCard: null })));
     if (channelRef.current) {
-      updatePresence({ selectedCard: null });
+      await updatePresence({ selectedCard: null, voteCastAt: null });
       channelRef.current.send({
         type: "broadcast",
         event: "story_state",
@@ -94,12 +110,19 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     }
   };
 
-  const triggerRevote = () => {
+  const triggerRevote = async () => {
     setIsRevealed(false);
+    setVotesSnapshot(null);
     setPlayers((prev) => prev.map((p) => ({ ...p, selectedCard: null })));
+    const newStartTime = Date.now();
+    setStoryStartTime(newStartTime);
     if (channelRef.current) {
-      updatePresence({ selectedCard: null });
-      channelRef.current.send({ type: "broadcast", event: "revote", payload: {} });
+      await updatePresence({ selectedCard: null, voteCastAt: null });
+      channelRef.current.send({ 
+        type: "broadcast", 
+        event: "revote", 
+        payload: { storyStartTime: newStartTime } 
+      });
     }
   };
 
@@ -129,16 +152,20 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
   };
 
   useEffect(() => {
-    if (!isRevealed && players.length > 0) {
-      const allVoted = players.every((p) => p.selectedCard !== null);
-      if (allVoted) {
-        toggleReveal(true);
+    if (!isRevealed && players.length > 0 && storyStartTime !== null) {
+      const activePlayers = players.filter((p) => p.joinedAt <= storyStartTime);
+      if (activePlayers.length > 0) {
+        const allVoted = activePlayers.every((p) => p.selectedCard !== null);
+        if (allVoted) {
+          toggleReveal(true);
+        }
       }
     }
-  }, [players, isRevealed, toggleReveal]);
+  }, [players, isRevealed, storyStartTime, toggleReveal]);
 
   return {
     players,
+    votesSnapshot,
     castVote,
     isRevealed,
     toggleReveal,

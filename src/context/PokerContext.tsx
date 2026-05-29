@@ -4,6 +4,7 @@ import type { Player, CardValue, Story } from "../types/poker";
 
 interface PokerContextType {
   players: Player[];
+  votesSnapshot: Player[] | null;
   castVote: (card: CardValue | null) => void;
   isRevealed: boolean;
   toggleReveal: (reveal: boolean) => void;
