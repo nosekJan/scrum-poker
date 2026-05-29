@@ -43,6 +43,7 @@ export const usePokerChannel = ({
   const channelRef = useRef<any>(null);
   const joinedAtRef = useRef(Date.now());
   const myCardRef = useRef<CardValue | null>(null);
+  const exitedHostsRef = useRef<Record<string, number>>({});
 
   const roomStateRef = useRef({ 
     isRevealed, 
@@ -81,6 +82,26 @@ export const usePokerChannel = ({
     }).catch(() => {});
   }, []);
 
+  const broadcastLeave = useCallback(() => {
+    if (channelRef.current && hostIdRef.current === myUserId) {
+      channelRef.current.send({
+        type: "broadcast",
+        event: "host_leaving",
+        payload: { userId: myUserId, timestamp: Date.now() },
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      broadcastLeave();
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [broadcastLeave]);
+
   useEffect(() => {
     const roomChannel = supabase.channel(`room_${roomId}`, {
       config: { presence: { key: myUserId } },
@@ -95,13 +116,22 @@ export const usePokerChannel = ({
         let oldestTime = Infinity;
         let currentHostId: string | null = null;
         const keys = Object.keys(state);
-        const firstAvailableId = keys[0] || null;
+        const firstAvailableId = keys.filter(k => {
+          const exitTime = exitedHostsRef.current[k];
+          const pData = (state[k] as any[])?.[0];
+          return !exitTime || (pData && (pData.joinedAt || 0) > exitTime);
+        })[0] || null;
 
         for (const [key, presenceArray] of Object.entries(state)) {
           const sortedPresence = [...(presenceArray as any[])].sort((a, b) => (b.joinedAt || 0) - (a.joinedAt || 0));
           const playerData = sortedPresence[0];
           if (!playerData) continue;
           
+          const exitTime = exitedHostsRef.current[key];
+          if (exitTime && (playerData.joinedAt || 0) <= exitTime) {
+            continue;
+          }
+
           const jTime = playerData.joinedAt || Date.now();
           if (jTime < oldestTime) {
             oldestTime = jTime;
@@ -119,6 +149,11 @@ export const usePokerChannel = ({
             const sortedPresence = [...(presenceArray as any[])].sort((a, b) => (b.joinedAt || 0) - (a.joinedAt || 0));
             const playerData = sortedPresence[0];
             if (!playerData) continue;
+
+            const exitTime = exitedHostsRef.current[key];
+            if (exitTime && (playerData.joinedAt || 0) <= exitTime) {
+              continue;
+            }
 
             const existingPlayer = prevPlayers.find((p) => p.id === key);
             
@@ -174,6 +209,22 @@ export const usePokerChannel = ({
         setPlayers((prev) => prev.map((p) => ({ ...p, selectedCard: null })));
         updatePresence({ selectedCard: null, voteCastAt: null });
       })
+      .on("broadcast", { event: "host_leaving" }, (payload) => {
+        const { userId, timestamp } = payload.payload;
+        exitedHostsRef.current[userId] = timestamp;
+        setPlayers((prev) => prev.filter((p) => p.id !== userId));
+        setHostId((current) => {
+          if (current === userId) {
+            const remaining = playersRef.current.filter((p) => p.id !== userId);
+            if (remaining.length > 0) {
+              const sorted = [...remaining].sort((a, b) => a.joinedAt - b.joinedAt);
+              return sorted[0].id;
+            }
+            return null;
+          }
+          return current;
+        });
+      })
       .on("broadcast", { event: "session_ended" }, () => {
         onLeaveRef.current();
       })
@@ -202,10 +253,11 @@ export const usePokerChannel = ({
       });
 
     return () => {
+      broadcastLeave();
       supabase.removeChannel(roomChannel);
       channelRef.current = null;
     };
-  }, [roomId, updatePresence]);
+  }, [roomId, updatePresence, broadcastLeave]);
 
   return { channelRef, updatePresence };
 };
