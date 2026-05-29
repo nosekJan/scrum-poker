@@ -6,14 +6,7 @@ import type { CardValue } from "../../types/poker";
 
 export const VotingDeck: React.FC = () => {
   const [selectedCard, setSelectedCard] = useState<CardValue | null>(null);
-  const {
-    isRevealed,
-    activeStory,
-    castVote,
-    votesSnapshot,
-    players,
-    storyStartTime,
-  } = usePoker();
+  const { isRevealed, activeStory, castVote, votesSnapshot } = usePoker();
 
   const cards: CardValue[] = [
     "0",
@@ -44,10 +37,6 @@ export const VotingDeck: React.FC = () => {
     castVote(newValue);
   };
 
-  const me = players.find((p) => p.id === myUserId);
-  const isSpectator =
-    storyStartTime !== null && me && me.joinedAt > storyStartTime;
-
   const amIInThisRound = votesSnapshot
     ? votesSnapshot.some((p) => p.id === myUserId)
     : true;
@@ -67,17 +56,14 @@ export const VotingDeck: React.FC = () => {
     <div
       className="mt-auto max-w-3xl mx-auto pb-4 transition-all duration-300"
       style={{
-        opacity: !activeStory || isRevealed || isSpectator ? 0.3 : 1,
-        pointerEvents:
-          !activeStory || isRevealed || isSpectator ? "none" : "auto",
+        opacity: !activeStory || isRevealed ? 0.3 : 1,
+        pointerEvents: !activeStory || isRevealed ? "none" : "auto",
       }}
     >
       <p className="text-center text-xs text-neutral-400 mb-3">
         {!activeStory
           ? "Set an active story to start voting"
-          : isSpectator
-            ? "You joined mid-round. Please wait for the next round..."
-            : "Choose your estimate"}
+          : "Choose your estimate"}
       </p>
       <div className="flex flex-wrap gap-2.5 justify-center">
         {cards.map((value) => (

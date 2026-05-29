@@ -65,10 +65,7 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
   }, [channelRef, updatePresence, players]);
 
   const castVote = (card: CardValue | null) => {
-    const me = players.find((p) => p.id === myUserId);
-    if (storyStartTime !== null && me && me.joinedAt > storyStartTime) {
-      return;
-    }
+    if (isRevealed) return;
 
     setPlayers((prev) => prev.map((p) => (p.id === myUserId ? { ...p, selectedCard: card } : p)));
     if (channelRef.current) {
@@ -152,16 +149,13 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
   };
 
   useEffect(() => {
-    if (!isRevealed && players.length > 0 && storyStartTime !== null) {
-      const activePlayers = players.filter((p) => p.joinedAt <= storyStartTime);
-      if (activePlayers.length > 0) {
-        const allVoted = activePlayers.every((p) => p.selectedCard !== null);
-        if (allVoted) {
-          toggleReveal(true);
-        }
+    if (!isRevealed && players.length > 0) {
+      const allVoted = players.every((p) => p.selectedCard !== null);
+      if (allVoted) {
+        toggleReveal(true);
       }
     }
-  }, [players, isRevealed, storyStartTime, toggleReveal]);
+  }, [players, isRevealed, toggleReveal]);
 
   return {
     players,
