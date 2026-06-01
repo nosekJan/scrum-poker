@@ -10,6 +10,7 @@ export const PlayerDesk: React.FC = () => {
     saveAndNextStory,
     triggerRevote,
     hostId,
+    activeStory,
   } = usePoker();
 
   const isHost = myUserId === hostId;
@@ -103,14 +104,23 @@ export const PlayerDesk: React.FC = () => {
             </div>
           </>
         )}
-
-        {!isRevealed &&
-          displayedPlayers.length > 0 &&
-          !displayedPlayers.every((p) => p.selectedCard !== null) && (
-            <p className="text-neutral-500 text-sm animate-pulse">
-              Waiting for all players to vote...
-            </p>
-          )}
+        {!isRevealed && displayedPlayers.length > 0 && (
+          <>
+            {!activeStory ? (
+              <p className="text-neutral-500 text-sm animate-pulse">
+                {isHost
+                  ? "Please set a story to begin voting..."
+                  : "Waiting for host to set a story..."}
+              </p>
+            ) : (
+              !displayedPlayers.every((p) => p.selectedCard !== null) && (
+                <p className="text-neutral-500 text-sm animate-pulse">
+                  Waiting for all players to vote...
+                </p>
+              )
+            )}
+          </>
+        )}
       </div>
 
       <div className="flex flex-wrap content-start justify-center gap-6 mb-12 min-h-[180px] w-full">

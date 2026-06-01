@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { myUserId } from "../utils/poker";
-import type { Player, CardValue, Story } from "../types/poker";
+import type { Player, Story } from "../types/poker";
 
 interface UsePokerChannelProps {
   roomId: string;

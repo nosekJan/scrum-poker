@@ -134,7 +134,7 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     }
   };
 
-  const endSession = async () => {
+const endSession = async () => {
     if (channelRef.current) {
       await channelRef.current.send({
         type: "broadcast",
@@ -142,9 +142,7 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
         payload: {},
       });
     }
-    setTimeout(() => {
-      onLeave();
-    }, 500);
+    onLeave();
   };
 
   useEffect(() => {
