@@ -34,3 +34,8 @@ next-env.d.ts
 *.njsproj
 *.sln
 *.sw?
+
+# Vite / Linter / Test files
+.eslintcache
+coverage/
+vite.config.ts.timestamp-*
