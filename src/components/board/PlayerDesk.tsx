@@ -23,9 +23,8 @@ export const PlayerDesk: React.FC = () => {
 
   const average = useMemo(() => {
     const validVotes = displayedPlayers
-      .map((p) => p.selectedCard)
-      .filter((val) => val !== null && val !== "?" && val !== "☕")
-      .map((val) => parseFloat(val as string));
+      .map((p) => parseFloat(p.selectedCard as string))
+      .filter((v) => !isNaN(v));
     if (validVotes.length === 0) return "0.0";
     return (
       validVotes.reduce((acc, curr) => acc + curr, 0) / validVotes.length
@@ -122,8 +121,8 @@ export const PlayerDesk: React.FC = () => {
           return (
             <div
               key={player.id}
-              className={`flex flex-col items-center gap-2.5 transition-opacity duration-300 ${
-                isOffline ? "opacity-40" : "opacity-100"
+              className={`flex flex-col items-center gap-2.5 transition-all duration-300 ${
+                isOffline ? "opacity-40 scale-95" : "opacity-100 scale-100"
               }`}
             >
               <div
@@ -158,7 +157,7 @@ export const PlayerDesk: React.FC = () => {
               <span className="text-xs font-medium text-neutral-400 max-w-[80px] truncate text-center flex flex-col items-center gap-0.5">
                 <span>{player.name}</span>
                 {isOffline && (
-                  <span className="text-[9px] text-neutral-600 font-semibold uppercase tracking-wider">
+                  <span className="text-[9px] text-neutral-500 font-semibold uppercase tracking-wider bg-neutral-900 px-1 rounded border border-neutral-800">
                     Offline
                   </span>
                 )}

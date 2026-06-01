@@ -23,7 +23,7 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     deleteStoryFromDB
   } = usePokerStories(roomId);
 
-  const { channelRef, updatePresence } = usePokerChannel({
+  const { channelRef, roomStateRef } = usePokerChannel({
     roomId,
     playerName,
     onLeave,
@@ -52,7 +52,6 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     } else {
       setVotesSnapshot(null);
       setPlayers((prev) => prev.map((p) => ({ ...p, selectedCard: null })));
-      await updatePresence({ selectedCard: null, voteCastAt: null });
     }
 
     if (channelRef.current) {
@@ -62,7 +61,7 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
         payload: { isRevealed: reveal, votesSnapshot: currentSnapshot },
       });
     }
-  }, [channelRef, updatePresence, players]);
+  }, [channelRef, players]);
 
   const castVote = (card: CardValue | null) => {
     if (isRevealed) return;
@@ -74,13 +73,13 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
         event: "vote",
         payload: { userId: myUserId, card },
       });
-      updatePresence({ selectedCard: card, voteCastAt: card ? Date.now() : null });
     }
   };
 
   const startStoryGrooming = (title: string) => {
     setActiveStory(title);
     const startTime = Date.now();
+    roomStateRef.current.storyStartTime = startTime;
     setStoryStartTime(startTime);
     if (channelRef.current) {
       channelRef.current.send({
@@ -97,8 +96,8 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     setIsRevealed(false);
     setVotesSnapshot(null);
     setPlayers((prev) => prev.map((p) => ({ ...p, selectedCard: null })));
+    roomStateRef.current.storyStartTime = null;
     if (channelRef.current) {
-      await updatePresence({ selectedCard: null, voteCastAt: null });
       channelRef.current.send({
         type: "broadcast",
         event: "story_state",
@@ -112,9 +111,9 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     setVotesSnapshot(null);
     setPlayers((prev) => prev.map((p) => ({ ...p, selectedCard: null })));
     const newStartTime = Date.now();
+    roomStateRef.current.storyStartTime = newStartTime;
     setStoryStartTime(newStartTime);
     if (channelRef.current) {
-      await updatePresence({ selectedCard: null, voteCastAt: null });
       channelRef.current.send({ 
         type: "broadcast", 
         event: "revote", 
@@ -135,9 +134,9 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     }
   };
 
-  const endSession = () => {
+  const endSession = async () => {
     if (channelRef.current) {
-      channelRef.current.send({
+      await channelRef.current.send({
         type: "broadcast",
         event: "session_ended",
         payload: {},
@@ -145,17 +144,17 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     }
     setTimeout(() => {
       onLeave();
-    }, 100);
+    }, 500);
   };
 
   useEffect(() => {
-    if (!isRevealed && players.length > 0) {
+    if (hostId === myUserId && !isRevealed && players.length > 0) {
       const allVoted = players.every((p) => p.selectedCard !== null);
       if (allVoted) {
         toggleReveal(true);
       }
     }
-  }, [players, isRevealed, toggleReveal]);
+  }, [players, isRevealed, toggleReveal, hostId]);
 
   return {
     players,

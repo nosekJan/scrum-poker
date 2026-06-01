@@ -29,7 +29,6 @@ export const Board: React.FC<BoardProps> = ({
           <PlayerDesk />
           <StorySidebar />
         </div>
-
         <VotingDeck />
       </div>
     </PokerProvider>

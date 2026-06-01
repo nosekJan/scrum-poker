@@ -42,7 +42,6 @@ export const usePokerChannel = ({
 }: UsePokerChannelProps) => {
   const channelRef = useRef<any>(null);
   const joinedAtRef = useRef(Date.now());
-  const myCardRef = useRef<CardValue | null>(null);
   const exitedHostsRef = useRef<Record<string, number>>({});
 
   const roomStateRef = useRef({ 
@@ -50,21 +49,21 @@ export const usePokerChannel = ({
     votesSnapshot, 
     activeStory, 
     completedStories, 
-    storyStartTime 
+    storyStartTime,
+    players 
   });
+  
   const hostIdRef = useRef<string | null>(null);
   const playersRef = useRef<Player[]>([]);
   const onLeaveRef = useRef(onLeave);
   const playerNameRef = useRef(playerName);
 
   useEffect(() => {
-    roomStateRef.current = { isRevealed, votesSnapshot, activeStory, completedStories, storyStartTime };
-  }, [isRevealed, votesSnapshot, activeStory, completedStories, storyStartTime]);
+    roomStateRef.current = { isRevealed, votesSnapshot, activeStory, completedStories, storyStartTime, players };
+  }, [isRevealed, votesSnapshot, activeStory, completedStories, storyStartTime, players]);
 
   useEffect(() => {
     playersRef.current = players;
-    const me = players.find((p) => p.id === myUserId);
-    if (me) myCardRef.current = me.selectedCard;
   }, [players]);
 
   useEffect(() => {
@@ -72,13 +71,11 @@ export const usePokerChannel = ({
     playerNameRef.current = playerName;
   }, [onLeave, playerName]);
 
-  const updatePresence = useCallback((overrides: any = {}) => {
+  const updatePresence = useCallback(() => {
     if (!channelRef.current) return;
     channelRef.current.track({
       name: playerNameRef.current,
-      selectedCard: myCardRef.current,
       joinedAt: joinedAtRef.current,
-      ...overrides
     }).catch(() => {});
   }, []);
 
@@ -156,21 +153,11 @@ export const usePokerChannel = ({
             }
 
             const existingPlayer = prevPlayers.find((p) => p.id === key);
-            
-            const isVoteStale = playerData.voteCastAt && 
-                                roomStateRef.current.storyStartTime && 
-                                playerData.voteCastAt < roomStateRef.current.storyStartTime;
-
-            const currentCard = isVoteStale 
-              ? null 
-              : (existingPlayer && existingPlayer.selectedCard !== null
-                  ? existingPlayer.selectedCard
-                  : (playerData.selectedCard || null));
 
             activePlayers.push({
               id: key,
               name: playerData.name,
-              selectedCard: currentCard,
+              selectedCard: existingPlayer ? existingPlayer.selectedCard : null,
               joinedAt: playerData.joinedAt || Date.now(),
             });
           }
@@ -189,13 +176,13 @@ export const usePokerChannel = ({
           setVotesSnapshot(snapshot || null);
         } else {
           setVotesSnapshot(null);
-          updatePresence({ selectedCard: null, voteCastAt: null });
         }
       })
       .on("broadcast", { event: "story_state" }, (payload) => {
         setActiveStory(payload.payload.activeStory);
         setCompletedStories(payload.payload.completedStories);
         setStoryStartTime(payload.payload.storyStartTime);
+        roomStateRef.current.storyStartTime = payload.payload.storyStartTime;
         if (payload.payload.resetVotes) {
           setPlayers((prev) => prev.map((p) => ({ ...p, selectedCard: null })));
           setIsRevealed(false);
@@ -206,8 +193,8 @@ export const usePokerChannel = ({
         setIsRevealed(false);
         setVotesSnapshot(null);
         setStoryStartTime(payload.payload.storyStartTime || null);
+        roomStateRef.current.storyStartTime = payload.payload.storyStartTime || null;
         setPlayers((prev) => prev.map((p) => ({ ...p, selectedCard: null })));
-        updatePresence({ selectedCard: null, voteCastAt: null });
       })
       .on("broadcast", { event: "host_leaving" }, (payload) => {
         const { userId, timestamp } = payload.payload;
@@ -218,8 +205,11 @@ export const usePokerChannel = ({
             const remaining = playersRef.current.filter((p) => p.id !== userId);
             if (remaining.length > 0) {
               const sorted = [...remaining].sort((a, b) => a.joinedAt - b.joinedAt);
-              return sorted[0].id;
+              const nextHostId = sorted[0].id;
+              hostIdRef.current = nextHostId;
+              return nextHostId;
             }
+            hostIdRef.current = null;
             return null;
           }
           return current;
@@ -229,8 +219,7 @@ export const usePokerChannel = ({
         onLeaveRef.current();
       })
       .on("broadcast", { event: "request_sync" }, () => {
-        const currentHostId = hostIdRef.current;
-        if (currentHostId === myUserId || !currentHostId) {
+        if (hostIdRef.current === myUserId) {
           roomChannel.send({
             type: "broadcast",
             event: "sync_response",
@@ -239,11 +228,20 @@ export const usePokerChannel = ({
         }
       })
       .on("broadcast", { event: "sync_response" }, (payload) => {
+        if (hostIdRef.current === myUserId) return;
         setIsRevealed(payload.payload.isRevealed);
         setVotesSnapshot(payload.payload.votesSnapshot || null);
         setActiveStory(payload.payload.activeStory);
         setCompletedStories(payload.payload.completedStories);
         setStoryStartTime(payload.payload.storyStartTime);
+        roomStateRef.current.storyStartTime = payload.payload.storyStartTime;
+        
+        if (payload.payload.players) {
+          setPlayers((prev) => prev.map((p) => {
+            const syncedPlayer = payload.payload.players.find((sp: Player) => sp.id === p.id);
+            return syncedPlayer ? { ...p, selectedCard: syncedPlayer.selectedCard } : p;
+          }));
+        }
       })
       .subscribe((status: string) => {
         if (status === "SUBSCRIBED") {
@@ -259,5 +257,5 @@ export const usePokerChannel = ({
     };
   }, [roomId, updatePresence, broadcastLeave]);
 
-  return { channelRef, updatePresence };
+  return { channelRef, updatePresence, roomStateRef };
 };
