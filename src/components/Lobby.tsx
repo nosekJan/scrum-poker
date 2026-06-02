@@ -13,6 +13,7 @@ export const Lobby: React.FC<LobbyProps> = ({
 }) => {
   const [name, setName] = useState("");
   const [roomId, setRoomId] = useState(initialRoomId || "");
+  const [copied, setCopied] = useState(false);
 
   const generateRandomRoom = () => {
     const secureId =
@@ -21,6 +22,17 @@ export const Lobby: React.FC<LobbyProps> = ({
         : Math.random().toString(36).substring(2) + Date.now().toString(36);
 
     setRoomId(secureId.substring(0, 30));
+  };
+
+  const handleCopy = async () => {
+    if (!roomId.trim()) return;
+    try {
+      await navigator.clipboard.writeText(roomId.trim());
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000); // Po 2 sekundách vráti pôvodnú ikonu
+    } catch (err) {
+      console.error("Failed to copy room ID:", err);
+    }
   };
 
   useEffect(() => {
@@ -77,7 +89,7 @@ export const Lobby: React.FC<LobbyProps> = ({
             />
           </div>
 
-          <div className="space-y-1 relative">
+          <div className="space-y-1">
             <div className="flex justify-between items-center ml-1 mb-1">
               <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">
                 Room Name
@@ -90,14 +102,65 @@ export const Lobby: React.FC<LobbyProps> = ({
                 Generate Random
               </button>
             </div>
-            <input
-              type="text"
-              value={roomId}
-              onChange={(e) => setRoomId(e.target.value)}
-              placeholder="e.g. carestation-team"
-              maxLength={30}
-              className="w-full px-4 py-3 bg-neutral-950 border border-neutral-800 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono text-sm"
-            />
+
+            <div className="relative flex items-center">
+              <input
+                type="text"
+                value={roomId}
+                onChange={(e) => setRoomId(e.target.value)}
+                placeholder="e.g. carestation-team"
+                maxLength={30}
+                className="w-full pl-4 pr-12 py-3 bg-neutral-950 border border-neutral-800 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono text-sm"
+              />
+
+              {roomId.trim() && (
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className="absolute right-3 p-2 text-neutral-500 hover:text-emerald-500 transition-colors cursor-pointer"
+                  title="Copy room name"
+                >
+                  {copied ? (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-emerald-500 animate-scaleIn"
+                    >
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  ) : (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect
+                        x="9"
+                        y="9"
+                        width="13"
+                        height="13"
+                        rx="2"
+                        ry="2"
+                      ></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  )}
+                </button>
+              )}
+            </div>
           </div>
 
           <button
