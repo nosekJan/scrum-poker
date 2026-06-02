@@ -114,7 +114,7 @@ export const StorySidebar: React.FC = () => {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto pr-1">
+      <div className="flex-1 overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-neutral-800 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-emerald-500/30 [scrollbar-width:thin] [scrollbar-color:#262626_transparent]">
         {activeTab === "active" && (
           <div className="h-full flex flex-col justify-between">
             {activeStory ? (
