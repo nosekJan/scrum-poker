@@ -45,6 +45,10 @@ export const StorySidebar: React.FC = () => {
     }
   };
 
+  const activeCount = activeStory ? 1 : 0;
+  const completedCount = completedStories.length;
+  const allCount = completedCount + activeCount;
+
   return (
     <div className="bg-neutral-900/60 border border-neutral-900/80 rounded-2xl p-5 flex flex-col h-[520px]">
       <div className="flex border-b border-neutral-800 mb-4 text-xs font-semibold tracking-wide uppercase">
@@ -54,9 +58,15 @@ export const StorySidebar: React.FC = () => {
         >
           Active Stories{" "}
           <span
-            className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] ${activeTab === "active" ? "bg-emerald-500/20 text-emerald-400" : "bg-neutral-800 text-neutral-500"}`}
+            className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] transition-all ${
+              activeCount > 0
+                ? "bg-emerald-500/20 text-emerald-400 animate-pulse font-bold"
+                : activeTab === "active"
+                  ? "bg-neutral-800 text-emerald-400/70"
+                  : "bg-neutral-800 text-neutral-600"
+            }`}
           >
-            {activeStory ? 1 : 0}
+            {activeCount}
           </span>
           {activeTab === "active" && (
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500" />
@@ -68,9 +78,15 @@ export const StorySidebar: React.FC = () => {
         >
           Completed{" "}
           <span
-            className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] ${activeTab === "completed" ? "bg-emerald-500/20 text-emerald-400" : "bg-neutral-800 text-neutral-500"}`}
+            className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] transition-all ${
+              activeTab === "completed"
+                ? "bg-emerald-500/20 text-emerald-400 font-bold"
+                : completedCount > 0
+                  ? "bg-emerald-500/10 text-emerald-400/80"
+                  : "bg-neutral-800 text-neutral-600"
+            }`}
           >
-            {completedStories.length}
+            {completedCount}
           </span>
           {activeTab === "completed" && (
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500" />
@@ -82,9 +98,15 @@ export const StorySidebar: React.FC = () => {
         >
           All Stories{" "}
           <span
-            className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] ${activeTab === "all" ? "bg-emerald-500/20 text-emerald-400" : "bg-neutral-800 text-neutral-500"}`}
+            className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] transition-all ${
+              activeTab === "all"
+                ? "bg-emerald-500/20 text-emerald-400 font-bold"
+                : allCount > 0
+                  ? "bg-neutral-800 text-neutral-400"
+                  : "bg-neutral-800 text-neutral-600"
+            }`}
           >
-            {completedStories.length + (activeStory ? 1 : 0)}
+            {allCount}
           </span>
           {activeTab === "all" && (
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500" />
