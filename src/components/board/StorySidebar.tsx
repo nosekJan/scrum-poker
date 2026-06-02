@@ -50,7 +50,7 @@ export const StorySidebar: React.FC = () => {
   const allCount = completedCount + activeCount;
 
   return (
-    <div className="bg-neutral-900/60 border border-neutral-900/80 rounded-2xl p-5 flex flex-col h-[520px]">
+    <div className="bg-neutral-900/60 border border-neutral-900/80 rounded-2xl p-5 flex flex-col h-full min-h-[340px] lg:min-h-0">
       <div className="flex border-b border-neutral-800 mb-4 text-xs font-semibold tracking-wide uppercase">
         <button
           onClick={() => setActiveTab("active")}

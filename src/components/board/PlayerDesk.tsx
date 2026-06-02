@@ -58,7 +58,7 @@ export const PlayerDesk: React.FC = () => {
 
   return (
     <div className="lg:col-span-2 flex flex-col items-center">
-      <div className="mb-8 flex flex-col items-center gap-4 min-h-[140px] justify-center w-full">
+      <div className="mb-4 flex flex-col items-center gap-2 min-h-[100px] justify-center w-full">
         {isRevealed && (
           <>
             <div className="flex gap-4">
@@ -130,7 +130,7 @@ export const PlayerDesk: React.FC = () => {
       </div>
 
       <div
-        className={`flex flex-wrap content-start justify-center mb-12 min-h-[180px] w-full transition-all duration-300 ${
+        className={`flex flex-wrap content-start justify-center mb-4 min-h-[130px] w-full transition-all duration-300 ${
           isCrowded ? "gap-x-3 gap-y-5" : "gap-6"
         }`}
       >
