@@ -16,11 +16,14 @@ A modern, fast, and lightweight web application for Planning Poker (Scrum Poker)
 - **One-Click Re-Vote:** Allows instant resetting of current votes for a fresh estimation round while preserving the active story and stopwatch state.
 - **Graceful Session Termination:** Awaits asynchronous websocket handshakes before unmounting elements, ensuring all players are properly kicked back to the lobby when the host ends a session.
 - **Modern Dark UI:** Tailored with Tailwind CSS (v4) for a premium, distraction-free estimation environment.
+- **CSS 3D Flip Animation Engine:** Implements smooth, hardware-accelerated 3D perspective transitions (`preserve-3d` and `rotateY`) that realistically flip player cards simultaneously during the reveal phase.
+- **Unanimous Celebration System:** Integrates a dynamic canvas confetti engine that automatically triggers a customized emerald-themed celebration the exact millisecond a 100% unanimous team vote is achieved.
+- **Smart Clipboard Invite Links:** Replaces raw static room hashes with an intelligent share button that dynamically captures the current environment origin (handling `localhost` vs production domains) and copies a full destination URL with temporal UI state feedback ("Link Copied!").
 
 ## 🚀 Tech Stack
 
 - **Frontend:** React (v19), TypeScript, Vite
-- **Styling:** Tailwind CSS (v4)
+- **Styling & Animations:** Tailwind CSS (v4), Canvas Confetti
 - **Routing:** React Router DOM
 - **Real-time Backend:** Supabase (Broadcast & Presence)
 
@@ -32,4 +35,5 @@ A modern, fast, and lightweight web application for Planning Poker (Scrum Poker)
 git clone <your-repo-url>
 cd css-poker
 npm install
+npm run dev
 ```

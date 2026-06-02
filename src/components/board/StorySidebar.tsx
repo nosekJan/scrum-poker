@@ -39,7 +39,7 @@ export const StorySidebar: React.FC = () => {
   };
 
   return (
-    <div className="bg-neutral-900/60 border border-neutral-900 rounded-2xl p-5 flex flex-col h-[520px]">
+    <div className="bg-neutral-900/60 border border-neutral-900/80 rounded-2xl p-5 flex flex-col h-[520px]">
       <div className="flex border-b border-neutral-800 mb-4 text-xs font-semibold tracking-wide uppercase">
         <button
           onClick={() => setActiveTab("active")}
@@ -118,7 +118,12 @@ export const StorySidebar: React.FC = () => {
                 />
                 <button
                   type="submit"
-                  className="w-full py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-xs font-bold hover:bg-neutral-700 transition-colors cursor-pointer"
+                  disabled={!storyInput.trim()}
+                  className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all disabled:cursor-not-allowed cursor-pointer ${
+                    !storyInput.trim()
+                      ? "bg-neutral-800 border border-neutral-700 text-neutral-500"
+                      : "bg-emerald-500 border border-emerald-400/20 text-white hover:bg-emerald-400 shadow-lg shadow-emerald-500/10"
+                  }`}
                 >
                   Set Active Story
                 </button>

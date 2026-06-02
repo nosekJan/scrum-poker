@@ -135,26 +135,41 @@ export const PlayerDesk: React.FC = () => {
                 isOffline ? "opacity-40 scale-95" : "opacity-100 scale-100"
               }`}
             >
-              <div
-                className={`group w-14 h-20 rounded-xl border flex items-center justify-center transition-all duration-300 relative ${
-                  player.selectedCard
-                    ? isRevealed
-                      ? "bg-emerald-500 border-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]"
-                      : "bg-emerald-500/10 border-emerald-500/40 text-emerald-400"
-                    : "bg-neutral-900 border-neutral-800 text-neutral-600"
-                }`}
-              >
-                {isRevealed && player.selectedCard ? (
-                  <span className="font-bold text-lg">
-                    {player.selectedCard}
-                  </span>
-                ) : player.selectedCard ? (
-                  "✔️"
-                ) : (
-                  "🤔"
-                )}
+              <div className="w-14 h-20 [perspective:1000px] relative">
+                <div
+                  className={`w-full h-full relative transition-transform duration-500 [transform-style:preserve-3d] ${
+                    isRevealed ? "[transform:rotateY(180deg)]" : ""
+                  }`}
+                >
+                  <div
+                    className={`absolute inset-0 w-full h-full rounded-xl border flex items-center justify-center [backface-visibility:hidden] transition-all duration-300 ${
+                      player.selectedCard
+                        ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-400"
+                        : "bg-neutral-900 border-neutral-800 text-neutral-600"
+                    }`}
+                  >
+                    {player.selectedCard ? "✔️" : "🤔"}
+                  </div>
+
+                  <div
+                    className={`absolute inset-0 w-full h-full rounded-xl border flex items-center justify-center [backface-visibility:hidden] [transform:rotateY(180deg)] transition-all duration-300 ${
+                      player.selectedCard
+                        ? "bg-emerald-500 border-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                        : "bg-neutral-900 border-neutral-800 text-neutral-600"
+                    }`}
+                  >
+                    {player.selectedCard ? (
+                      <span className="font-bold text-lg">
+                        {player.selectedCard}
+                      </span>
+                    ) : (
+                      "🤔"
+                    )}
+                  </div>
+                </div>
+
                 {player.id === hostId && (
-                  <span className="absolute -top-3.5 -right-3 text-lg transform rotate-12 drop-shadow-md">
+                  <span className="absolute -top-3.5 -right-3 text-lg transform rotate-12 drop-shadow-md z-20">
                     👑
                   </span>
                 )}
