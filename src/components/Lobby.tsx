@@ -18,6 +18,7 @@ export const Lobby: React.FC<LobbyProps> = ({
     return urlParams.get("room") || "";
   });
   const [copied, setCopied] = useState(false);
+  const [roomHistory, setRoomHistory] = useState<string[]>([]);
 
   const generateRandomRoom = () => {
     const secureId =
@@ -43,6 +44,15 @@ export const Lobby: React.FC<LobbyProps> = ({
     const savedName = localStorage.getItem("kestra_poker_name");
     if (savedName) setName(savedName);
 
+    const savedHistory = localStorage.getItem("kestra_poker_history");
+    if (savedHistory) {
+      try {
+        setRoomHistory(JSON.parse(savedHistory));
+      } catch (e) {
+        console.error("Failed to parse room history:", e);
+      }
+    }
+
     const urlParams = new URLSearchParams(window.location.search);
     const urlRoomId = urlParams.get("room");
 
@@ -64,9 +74,36 @@ export const Lobby: React.FC<LobbyProps> = ({
     if (trimmedName && trimmedRoom) {
       localStorage.setItem("kestra_poker_name", trimmedName);
       localStorage.setItem("kestra_poker_room", trimmedRoom);
+
+      const updatedHistory = [
+        trimmedRoom,
+        ...roomHistory.filter((r) => r !== trimmedRoom),
+      ].slice(0, 5);
+
+      setRoomHistory(updatedHistory);
+      localStorage.setItem(
+        "kestra_poker_history",
+        JSON.stringify(updatedHistory),
+      );
+
       onJoin(trimmedName, trimmedRoom, true);
     }
   };
+
+  const handleDeleteHistory = (roomToDelete: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updatedHistory = roomHistory.filter((r) => r !== roomToDelete);
+    setRoomHistory(updatedHistory);
+    localStorage.setItem(
+      "kestra_poker_history",
+      JSON.stringify(updatedHistory),
+    );
+  };
+
+  const currentNormalizedRoom = roomId
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-");
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-neutral-950 px-4 font-sans">
@@ -182,6 +219,53 @@ export const Lobby: React.FC<LobbyProps> = ({
             Enter Room
           </button>
         </form>
+
+        {roomHistory.length > 0 && (
+          <div className="mt-6 pt-6 border-t border-neutral-800/60">
+            <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3 ml-1">
+              Recent Rooms
+            </p>
+            <div className="flex flex-col gap-2">
+              {roomHistory.map((room) => {
+                const isActive = currentNormalizedRoom === room;
+
+                return (
+                  <div
+                    key={room}
+                    onClick={() => setRoomId(room)}
+                    className={`group flex justify-between items-center px-4 py-2.5 rounded-xl cursor-pointer transition-all border ${
+                      isActive
+                        ? "bg-emerald-500/5 border-emerald-500/30 text-emerald-400"
+                        : "bg-neutral-950 hover:bg-neutral-800/30 border-neutral-800/40"
+                    }`}
+                  >
+                    <span
+                      className={`text-sm font-mono truncate pr-4 transition-colors ${
+                        isActive
+                          ? "text-emerald-400 font-medium"
+                          : "text-neutral-400 group-hover:text-neutral-200"
+                      }`}
+                    >
+                      {room}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteHistory(room, e)}
+                      className={`px-1.5 py-0.5 rounded transition-colors text-xs font-mono cursor-pointer ${
+                        isActive
+                          ? "text-emerald-600 hover:text-red-400"
+                          : "text-neutral-600 hover:text-red-400"
+                      }`}
+                      title="Remove from history"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

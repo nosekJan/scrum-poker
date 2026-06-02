@@ -6,3 +6,28 @@ body {
   font-family: sans-serif;
   margin: 0;
 }
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #262626;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.3);
+}
+
+html, body, #root {
+  min-height: 100vh;
+  background-color: #0a0a0a;
+  scrollbar-width: thin;
+  scrollbar-color: #262626 transparent;
+}

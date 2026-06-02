@@ -16,17 +16,21 @@ export const PlayerDesk: React.FC = () => {
   const isHost = myUserId === hostId;
 
   const displayedPlayers = useMemo(() => {
-    if (isRevealed && votesSnapshot) {
-      return votesSnapshot;
-    }
-    return players;
+    return isRevealed && votesSnapshot ? votesSnapshot : players;
   }, [isRevealed, votesSnapshot, players]);
+
+  const isCrowded = displayedPlayers.length > 10;
 
   const average = useMemo(() => {
     const validVotes = displayedPlayers
       .map((p) => parseFloat(p.selectedCard as string))
       .filter((v) => !isNaN(v));
-    if (validVotes.length === 0) return "0.0";
+
+    if (validVotes.length === 0) {
+      const hasCoffee = displayedPlayers.some((p) => p.selectedCard === "☕");
+      return hasCoffee ? "☕" : "—";
+    }
+
     return (
       validVotes.reduce((acc, curr) => acc + curr, 0) / validVotes.length
     ).toFixed(1);
@@ -105,13 +109,15 @@ export const PlayerDesk: React.FC = () => {
           </>
         )}
         {!isRevealed && displayedPlayers.length > 0 && (
-          <>
+          <div className="flex flex-col items-center gap-1.5 text-center">
             {!activeStory ? (
-              <p className="text-neutral-500 text-sm animate-pulse">
-                {isHost
-                  ? "Please set a story to begin voting..."
-                  : "Waiting for host to set a story..."}
-              </p>
+              <>
+                {isHost && displayedPlayers.length === 1 && (
+                  <p className="text-neutral-600 text-xs">
+                    Tip: Click the room tag above to copy the invite link
+                  </p>
+                )}
+              </>
             ) : (
               !displayedPlayers.every((p) => p.selectedCard !== null) && (
                 <p className="text-neutral-500 text-sm animate-pulse">
@@ -119,11 +125,15 @@ export const PlayerDesk: React.FC = () => {
                 </p>
               )
             )}
-          </>
+          </div>
         )}
       </div>
 
-      <div className="flex flex-wrap content-start justify-center gap-6 mb-12 min-h-[180px] w-full">
+      <div
+        className={`flex flex-wrap content-start justify-center mb-12 min-h-[180px] w-full transition-all duration-300 ${
+          isCrowded ? "gap-x-3 gap-y-5" : "gap-6"
+        }`}
+      >
         {displayedPlayers.map((player) => {
           const isOffline =
             isRevealed && !players.some((p) => p.id === player.id);
@@ -131,11 +141,15 @@ export const PlayerDesk: React.FC = () => {
           return (
             <div
               key={player.id}
-              className={`flex flex-col items-center gap-2.5 transition-all duration-300 ${
-                isOffline ? "opacity-40 scale-95" : "opacity-100 scale-100"
-              }`}
+              className={`flex flex-col items-center gap-2 transition-all duration-300 text-center ${
+                isCrowded ? "w-[76px]" : "w-[90px]"
+              } ${isOffline ? "opacity-40 scale-95" : "opacity-100 scale-100"}`}
             >
-              <div className="w-14 h-20 [perspective:1000px] relative">
+              <div
+                className={`transition-all duration-300 relative [perspective:1000px] ${
+                  isCrowded ? "w-12 h-16" : "w-14 h-20"
+                }`}
+              >
                 <div
                   className={`w-full h-full relative transition-transform duration-500 [transform-style:preserve-3d] ${
                     isRevealed ? "[transform:rotateY(180deg)]" : ""
@@ -146,7 +160,7 @@ export const PlayerDesk: React.FC = () => {
                       player.selectedCard
                         ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-400"
                         : "bg-neutral-900 border-neutral-800 text-neutral-600"
-                    }`}
+                    } ${isCrowded ? "text-sm" : "text-base"}`}
                   >
                     {player.selectedCard ? "✔️" : "🤔"}
                   </div>
@@ -159,7 +173,11 @@ export const PlayerDesk: React.FC = () => {
                     }`}
                   >
                     {player.selectedCard ? (
-                      <span className="font-bold text-lg">
+                      <span
+                        className={`font-bold transition-all ${
+                          isCrowded ? "text-base" : "text-lg"
+                        }`}
+                      >
                         {player.selectedCard}
                       </span>
                     ) : (
@@ -169,18 +187,25 @@ export const PlayerDesk: React.FC = () => {
                 </div>
 
                 {player.id === hostId && (
-                  <span className="absolute -top-3.5 -right-3 text-lg transform rotate-12 drop-shadow-md z-20">
+                  <span
+                    className={`absolute transform rotate-12 drop-shadow-md z-20 transition-all ${
+                      isCrowded
+                        ? "-top-3 -right-2 text-base"
+                        : "-top-3.5 -right-3 text-lg"
+                    }`}
+                  >
                     👑
                   </span>
                 )}
                 {player.id === myUserId && (
-                  <span className="absolute -top-2 -left-2 bg-neutral-800 border border-neutral-700 text-[9px] px-1.5 py-0.5 rounded-full text-neutral-400 font-bold uppercase tracking-wide z-20">
+                  <span className="absolute -top-2 -left-2 bg-neutral-800 border border-neutral-700 text-[8px] px-1 py-0.5 rounded-full text-neutral-400 font-bold uppercase tracking-wide z-20">
                     You
                   </span>
                 )}
               </div>
-              <span className="text-xs font-medium text-neutral-400 max-w-[80px] truncate text-center flex flex-col items-center gap-0.5">
-                <span>{player.name}</span>
+
+              <span className="text-xs font-medium text-neutral-400 w-full truncate text-center flex flex-col items-center gap-0.5">
+                <span className="w-full truncate px-1">{player.name}</span>
                 {isOffline && (
                   <span className="text-[9px] text-neutral-500 font-semibold uppercase tracking-wider bg-neutral-900 px-1 rounded border border-neutral-800">
                     Offline

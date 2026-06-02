@@ -68,7 +68,7 @@ function RoomRoute() {
 
   if (isValidating) {
     return (
-      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
+      <div className="min-h-screen w-full bg-neutral-950 flex items-center justify-center">
         <p className="text-neutral-500 animate-pulse text-sm">
           Validating room access...
         </p>
@@ -98,7 +98,9 @@ function RoomRoute() {
   };
 
   return (
-    <Board roomId={roomId!} playerName={playerName} onLeave={handleLeave} />
+    <div className="min-h-screen lg:h-screen w-full bg-neutral-950 flex flex-col lg:overflow-hidden">
+      <Board roomId={roomId!} playerName={playerName} onLeave={handleLeave} />
+    </div>
   );
 }
 
