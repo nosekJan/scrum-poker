@@ -18,19 +18,19 @@ export const Board: React.FC<BoardProps> = ({
 }) => {
   return (
     <PokerProvider roomId={roomId} playerName={playerName} onLeave={onLeave}>
-      <div className="min-h-screen flex flex-col p-6 bg-neutral-950 text-white">
+      <div className="min-h-screen lg:h-full flex flex-col p-4 lg:py-3 lg:px-6 bg-neutral-950 text-white">
         <BoardHeader
           roomId={roomId}
           playerName={playerName}
           onLeave={onLeave}
         />
 
-        <div className="flex-1 max-w-5xl mx-auto w-full grid grid-cols-1 lg:grid-cols-3 lg:grid-rows-[minmax(0,1fr)_auto] gap-y-8 lg:gap-y-0 lg:gap-x-8">
+        <div className="flex-1 max-w-5xl mx-auto w-full grid grid-cols-1 lg:grid-cols-3 lg:grid-rows-[minmax(0,1fr)_auto] gap-y-6 lg:gap-y-0 lg:gap-x-8">
           <div className="lg:col-span-2 lg:row-start-1 flex flex-col">
             <PlayerDesk />
           </div>
 
-          <div className="order-2 lg:order-none lg:col-span-3 lg:row-start-2 flex flex-col justify-end mt-4 lg:mt-0">
+          <div className="order-2 lg:order-none lg:col-span-3 lg:row-start-2 flex flex-col justify-end mt-2 lg:mt-0">
             <VotingDeck />
           </div>
 
