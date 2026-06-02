@@ -104,13 +104,20 @@ export const PlayerDesk: React.FC = () => {
           </>
         )}
         {!isRevealed && displayedPlayers.length > 0 && (
-          <>
+          <div className="flex flex-col items-center gap-1.5 text-center">
             {!activeStory ? (
-              <p className="text-neutral-500 text-sm animate-pulse">
-                {isHost
-                  ? "Please set a story to begin voting..."
-                  : "Waiting for host to set a story..."}
-              </p>
+              <>
+                {isHost && displayedPlayers.length === 1 && (
+                  <p className="text-neutral-600 text-xs">
+                    Tip: Click the room tag above to copy the invite link
+                  </p>
+                )}
+                <p className="text-neutral-500 text-sm animate-pulse">
+                  {isHost
+                    ? "Please set a story to begin voting..."
+                    : "Waiting for host to set a story..."}
+                </p>
+              </>
             ) : (
               !displayedPlayers.every((p) => p.selectedCard !== null) && (
                 <p className="text-neutral-500 text-sm animate-pulse">
@@ -118,7 +125,7 @@ export const PlayerDesk: React.FC = () => {
                 </p>
               )
             )}
-          </>
+          </div>
         )}
       </div>
 

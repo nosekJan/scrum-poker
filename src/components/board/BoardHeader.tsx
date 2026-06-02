@@ -31,12 +31,12 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
   return (
     <header className="flex justify-between items-center mb-8 max-w-5xl mx-auto w-full">
       <div className="flex items-center gap-6">
-        <h1 className="text-xl font-bold">
+        <h1 className="text-xl font-bold whitespace-nowrap">
           Kestra Poker <span className="text-emerald-500">.</span>
         </h1>
         <button
           onClick={handleCopyInvite}
-          className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-neutral-900 border border-neutral-800 hover:border-emerald-500/40 rounded-xl text-sm text-neutral-400 hover:text-emerald-400 transition-all cursor-pointer group"
+          className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-neutral-900 border border-neutral-800 hover:border-emerald-500/40 rounded-xl text-sm text-neutral-400 hover:text-emerald-400 transition-all cursor-pointer group shrink-0"
           title="Copy full invite link"
         >
           <span className="font-medium">Room:</span>
@@ -67,13 +67,13 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
         </button>
       </div>
       <div className="flex items-center gap-4">
-        <span className="text-neutral-400">
+        <span className="text-neutral-400 whitespace-nowrap">
           Playing as <strong className="text-white">{playerName}</strong>
         </span>
         {isHost && (
           <button
             onClick={endSession}
-            className="px-3 py-1.5 border border-red-900/50 bg-red-900/20 rounded-lg text-xs text-red-400 hover:bg-red-900/40 transition-colors cursor-pointer"
+            className="px-3 py-1.5 border border-red-900/50 bg-red-900/20 rounded-lg text-xs text-red-400 hover:bg-red-900/40 transition-colors cursor-pointer whitespace-nowrap"
           >
             End Session
           </button>
