@@ -26,8 +26,9 @@ body {
   background: rgba(16, 185, 129, 0.3);
 }
 
-html {
-  scrollbar-width: thin;
-  scrollbar-color: #262626 transparent;
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+  scrollbar-width: none;
   background-color: #0a0a0a;
 }

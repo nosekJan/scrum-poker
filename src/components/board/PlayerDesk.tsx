@@ -112,11 +112,6 @@ export const PlayerDesk: React.FC = () => {
                     Tip: Click the room tag above to copy the invite link
                   </p>
                 )}
-                <p className="text-neutral-500 text-sm animate-pulse">
-                  {isHost
-                    ? "Please set a story to begin voting..."
-                    : "Waiting for host to set a story..."}
-                </p>
               </>
             ) : (
               !displayedPlayers.every((p) => p.selectedCard !== null) && (

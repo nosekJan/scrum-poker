@@ -3,6 +3,7 @@ import {
   BrowserRouter,
   Routes,
   Route,
+  Navigate,
   useNavigate,
   useParams,
   useLocation,
@@ -68,7 +69,7 @@ function RoomRoute() {
 
   if (isValidating) {
     return (
-      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
+      <div className="h-screen w-screen bg-neutral-950 flex items-center justify-center overflow-hidden">
         <p className="text-neutral-500 animate-pulse text-sm">
           Validating room access...
         </p>
@@ -98,7 +99,9 @@ function RoomRoute() {
   };
 
   return (
-    <Board roomId={roomId!} playerName={playerName} onLeave={handleLeave} />
+    <div className="h-screen w-screen overflow-hidden bg-neutral-950 flex flex-col">
+      <Board roomId={roomId!} playerName={playerName} onLeave={handleLeave} />
+    </div>
   );
 }
 

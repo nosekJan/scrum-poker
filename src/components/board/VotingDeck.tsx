@@ -22,7 +22,10 @@ const CARDS: CardValue[] = [
 
 export const VotingDeck: React.FC = () => {
   const [selectedCard, setSelectedCard] = useState<CardValue | null>(null);
-  const { isRevealed, activeStory, castVote, votesSnapshot } = usePoker();
+  const { isRevealed, activeStory, castVote, votesSnapshot, hostId } =
+    usePoker();
+
+  const isHost = myUserId === hostId;
 
   useEffect(() => {
     if (!isRevealed) {
@@ -62,9 +65,11 @@ export const VotingDeck: React.FC = () => {
           : "opacity-100 pointer-events-auto"
       }`}
     >
-      <p className="text-center text-xs text-neutral-400 mb-3">
+      <p className="text-center text-xs text-neutral-500 mb-4 font-medium tracking-wide">
         {!activeStory
-          ? "Set an active story to start voting"
+          ? isHost
+            ? "Set an active story to start voting"
+            : "Voting will unlock once a story is set"
           : "Choose your estimate"}
       </p>
       <div className="flex flex-wrap gap-2.5 justify-center">
