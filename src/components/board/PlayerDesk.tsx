@@ -25,7 +25,12 @@ export const PlayerDesk: React.FC = () => {
     const validVotes = displayedPlayers
       .map((p) => parseFloat(p.selectedCard as string))
       .filter((v) => !isNaN(v));
-    if (validVotes.length === 0) return "0.0";
+
+    if (validVotes.length === 0) {
+      const hasCoffee = displayedPlayers.some((p) => p.selectedCard === "☕");
+      return hasCoffee ? "☕" : "—";
+    }
+
     return (
       validVotes.reduce((acc, curr) => acc + curr, 0) / validVotes.length
     ).toFixed(1);
