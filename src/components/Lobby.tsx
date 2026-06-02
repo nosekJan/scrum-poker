@@ -12,7 +12,11 @@ export const Lobby: React.FC<LobbyProps> = ({
   error,
 }) => {
   const [name, setName] = useState("");
-  const [roomId, setRoomId] = useState(initialRoomId || "");
+  const [roomId, setRoomId] = useState(() => {
+    if (initialRoomId) return initialRoomId;
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get("room") || "";
+  });
   const [copied, setCopied] = useState(false);
 
   const generateRandomRoom = () => {
@@ -29,7 +33,7 @@ export const Lobby: React.FC<LobbyProps> = ({
     try {
       await navigator.clipboard.writeText(roomId.trim());
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000); // Po 2 sekundách vráti pôvodnú ikonu
+      setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error("Failed to copy room ID:", err);
     }
@@ -39,7 +43,14 @@ export const Lobby: React.FC<LobbyProps> = ({
     const savedName = localStorage.getItem("kestra_poker_name");
     if (savedName) setName(savedName);
 
-    if (!initialRoomId) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlRoomId = urlParams.get("room");
+
+    if (initialRoomId) {
+      setRoomId(initialRoomId);
+    } else if (urlRoomId) {
+      setRoomId(urlRoomId);
+    } else {
       const savedRoom = localStorage.getItem("kestra_poker_room");
       if (savedRoom) setRoomId(savedRoom);
     }
