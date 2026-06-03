@@ -1,6 +1,59 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { usePoker } from "../../context/PokerContext";
 import { myUserId } from "../../hooks/usePokerGame";
+
+const PLAYER_EMOJIS = [
+  "🦊",
+  "🐰",
+  "🐼",
+  "🐨",
+  "🐯",
+  "🦁",
+  "🐸",
+  "🐵",
+  "🦉",
+  "🦄",
+  "🐙",
+  "🦖",
+  "🦥",
+  "🦦",
+  "👽",
+  "🤖",
+  "👻",
+  "🦫",
+  "🦩",
+  "🐢",
+  "🐶",
+  "🐱",
+  "🐭",
+  "🐹",
+  "🐻",
+  "🐷",
+  "🐮",
+  "🐔",
+  "🐧",
+  "🐦",
+  "🐤",
+  "🦆",
+  "🦅",
+  "🦇",
+  "🐺",
+  "🐗",
+  "🐴",
+  "🐝",
+  "🦋",
+  "🐌",
+  "🐞",
+  "🐜",
+  "🦂",
+  "🕷️",
+  "🐒",
+  "🦍",
+  "🦧",
+  "🐕",
+  "🐈",
+  "🐆",
+];
 
 export const PlayerDesk: React.FC = () => {
   const {
@@ -20,6 +73,42 @@ export const PlayerDesk: React.FC = () => {
   }, [isRevealed, votesSnapshot, players]);
 
   const isCrowded = displayedPlayers.length > 10;
+
+  const emojiCache = useRef<Map<string, string>>(new Map());
+
+  const playerEmojis = useMemo(() => {
+    const currentIds = new Set(displayedPlayers.map((p) => p.id));
+
+    for (const cachedId of emojiCache.current.keys()) {
+      if (!currentIds.has(cachedId)) {
+        emojiCache.current.delete(cachedId);
+      }
+    }
+
+    const usedEmojis = new Set<string>();
+    displayedPlayers.forEach((player) => {
+      if (emojiCache.current.has(player.id)) {
+        usedEmojis.add(emojiCache.current.get(player.id)!);
+      }
+    });
+
+    const mapping: Record<string, string> = {};
+    displayedPlayers.forEach((player) => {
+      if (!emojiCache.current.has(player.id)) {
+        let availableEmojis = PLAYER_EMOJIS.filter((e) => !usedEmojis.has(e));
+        if (availableEmojis.length === 0) {
+          availableEmojis = PLAYER_EMOJIS;
+        }
+        const chosenEmoji =
+          availableEmojis[Math.floor(Math.random() * availableEmojis.length)];
+        emojiCache.current.set(player.id, chosenEmoji);
+        usedEmojis.add(chosenEmoji);
+      }
+      mapping[player.id] = emojiCache.current.get(player.id)!;
+    });
+
+    return mapping;
+  }, [displayedPlayers]);
 
   const average = useMemo(() => {
     const validVotes = displayedPlayers
@@ -299,17 +388,23 @@ export const PlayerDesk: React.FC = () => {
                   <div
                     className={`absolute inset-0 w-full h-full rounded-xl border flex items-center justify-center [backface-visibility:hidden] transition-all duration-300 ${
                       player.selectedCard
-                        ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-400"
+                        ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-400 text-xs"
                         : "bg-neutral-900 border-neutral-800 text-neutral-600"
-                    } ${isCrowded ? "text-xs" : "text-base"}`}
+                    }`}
                   >
-                    {player.selectedCard ? "✔️" : "🤔"}
+                    {player.selectedCard ? (
+                      "✔️"
+                    ) : (
+                      <span className={isCrowded ? "text-xl" : "text-3xl"}>
+                        {playerEmojis[player.id]}
+                      </span>
+                    )}
                   </div>
 
                   <div
                     className={`absolute inset-0 w-full h-full rounded-xl border flex items-center justify-center [backface-visibility:hidden] [transform:rotateY(180deg)] transition-all duration-300 ${
                       player.selectedCard
-                        ? "bg-emerald-500 border-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                        ? "bg-emerald-500 border border-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]"
                         : "bg-neutral-900 border-neutral-800 text-neutral-600"
                     }`}
                   >
@@ -322,7 +417,9 @@ export const PlayerDesk: React.FC = () => {
                         {player.selectedCard}
                       </span>
                     ) : (
-                      "🤔"
+                      <span className={isCrowded ? "text-xl" : "text-3xl"}>
+                        {playerEmojis[player.id]}
+                      </span>
                     )}
                   </div>
                 </div>
