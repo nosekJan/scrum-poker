@@ -42,6 +42,7 @@ export const usePokerChannel = ({
 }: UsePokerChannelProps) => {
   const channelRef = useRef<any>(null);
   const joinedAtRef = useRef(Date.now());
+  const emojiSeedRef = useRef(Math.random());
   const exitedHostsRef = useRef<Record<string, number>>({});
 
   const roomStateRef = useRef({ 
@@ -76,6 +77,7 @@ export const usePokerChannel = ({
     channelRef.current.track({
       name: playerNameRef.current,
       joinedAt: joinedAtRef.current,
+      emojiSeed: emojiSeedRef.current,
     }).catch(() => {});
   }, []);
 
@@ -159,7 +161,8 @@ export const usePokerChannel = ({
               name: playerData.name,
               selectedCard: existingPlayer ? existingPlayer.selectedCard : null,
               joinedAt: playerData.joinedAt || Date.now(),
-            });
+              emojiSeed: playerData.emojiSeed,
+            } as any);
           }
           activePlayers.sort((a, b) => a.name.localeCompare(b.name));
           return activePlayers;
@@ -222,7 +225,7 @@ export const usePokerChannel = ({
         if (hostIdRef.current === myUserId) {
           roomChannel.send({
             type: "broadcast",
-            event: "sync_response",
+            event: "request_sync",
             payload: roomStateRef.current,
           });
         }
