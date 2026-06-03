@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { usePoker } from "../../context/PokerContext";
 import { myUserId } from "../../hooks/usePokerGame";
 
@@ -21,6 +21,7 @@ export const PlayerDesk: React.FC = () => {
 
   const isCrowded = displayedPlayers.length > 10;
 
+  // 1. Presný matematický priemer (pre malý zelený štítok)
   const average = useMemo(() => {
     const validVotes = displayedPlayers
       .map((p) => parseFloat(p.selectedCard as string))
@@ -36,6 +37,7 @@ export const PlayerDesk: React.FC = () => {
     ).toFixed(1);
   }, [displayedPlayers]);
 
+  // 2. Štatistiky hlasovania zoradené od najpoužívanejšej karty
   const voteStats = useMemo(() => {
     if (!isRevealed) return [];
     const stats: Record<string, number> = {};
@@ -56,58 +58,213 @@ export const PlayerDesk: React.FC = () => {
       .sort((a, b) => b.count - a.count);
   }, [displayedPlayers, isRevealed]);
 
+  // Lokálny stav pre voľbu hosta pri remíze (Tie-break)
+  const [tiePreference, setTiePreference] = useState<"higher" | "lower">(
+    "higher",
+  );
+
+  // Automatický reset prepínača pri novom hlasovaní
+  useEffect(() => {
+    if (!isRevealed) {
+      setTiePreference("higher");
+    }
+  }, [isRevealed]);
+
+  // 3. Inteligentná detekcia remízy ukotvená o matematický priemer (Smart Anchor)
+  const tieInfo = useMemo(() => {
+    if (voteStats.length === 0)
+      return { isTie: false, lowest: "", highest: "" };
+
+    const maxCount = voteStats[0].count;
+    const topCards = voteStats
+      .filter((s) => s.count === maxCount)
+      .map((s) => s.card);
+
+    if (topCards.length < 2) {
+      return { isTie: false, lowest: topCards[0], highest: topCards[0] };
+    }
+
+    const numAverage = parseFloat(average);
+    if (isNaN(numAverage)) {
+      const sorted = [...topCards].sort(
+        (a, b) => parseFloat(a) - parseFloat(b),
+      );
+      return {
+        isTie: true,
+        lowest: sorted[0],
+        highest: sorted[sorted.length - 1],
+      };
+    }
+
+    // Prevedieme karty na čísla pre presný matematický filter
+    const numericCards = topCards
+      .map((c) => ({ string: c, number: parseFloat(c) }))
+      .filter((c) => !isNaN(c.number));
+
+    // Rozdelíme karty na tie pod priemerom a nad priemerom
+    const belowOrEqual = numericCards.filter((c) => c.number <= numAverage);
+    const aboveOrEqual = numericCards.filter((c) => c.number >= numAverage);
+
+    let smartLower = "";
+    let smartHigher = "";
+
+    if (belowOrEqual.length > 0) {
+      // Nájdeme kartu najbližšiu k priemeru zhasnutím smerom nadol
+      belowOrEqual.sort((a, b) => b.number - a.number);
+      smartLower = belowOrEqual[0].string;
+    } else {
+      const sorted = [...numericCards].sort((a, b) => a.number - b.number);
+      smartLower = sorted[0].string;
+    }
+
+    if (aboveOrEqual.length > 0) {
+      // Nájdeme kartu najbližšiu k priemeru zhasnutím smerom nahor
+      aboveOrEqual.sort((a, b) => a.number - b.number);
+      smartHigher = aboveOrEqual[0].string;
+    } else {
+      const sorted = [...numericCards].sort((a, b) => b.number - a.number);
+      smartHigher = sorted[0].string;
+    }
+
+    // Ak sa spodná aj horná najbližšia karta rovnajú (napr. priemer sadol presne na stredovú kartu pri 3 ľuďoch)
+    if (smartLower === smartHigher) {
+      return { isTie: false, lowest: smartLower, highest: smartHigher };
+    }
+
+    return {
+      isTie: true,
+      lowest: smartLower,
+      highest: smartHigher,
+    };
+  }, [voteStats, average]);
+
+  // 4. Výsledná celá karta priradená k úlohe
+  const finalValue = useMemo(() => {
+    if (voteStats.length === 0) return "—";
+    if (tieInfo.isTie) {
+      return tiePreference === "higher" ? tieInfo.highest : tieInfo.lowest;
+    }
+    return voteStats[0].card;
+  }, [voteStats, tieInfo, tiePreference]);
+
   return (
     <div className="lg:col-span-2 flex flex-col items-center">
       <div className="mb-4 flex flex-col items-center gap-2 min-h-[100px] justify-center w-full">
         {isRevealed && (
-          <>
-            <div className="flex gap-4">
-              {isHost && (
-                <>
+          <div className="text-center transition-opacity duration-300 flex flex-col items-center gap-2 w-full">
+            {/* SEKCOU 1: Ovládacie prvky - IBA PRE HOSTA */}
+            {isHost && (
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex gap-3">
                   <button
-                    onClick={() => saveAndNextStory(average)}
-                    className="px-6 py-2 bg-emerald-500 text-white rounded-lg font-bold hover:bg-emerald-600 transition-colors cursor-pointer shadow-lg shadow-emerald-500/20"
+                    onClick={() => saveAndNextStory(finalValue)}
+                    className="px-5 py-1.5 bg-emerald-500 text-white rounded-lg font-bold hover:bg-emerald-600 transition-colors cursor-pointer shadow-lg shadow-emerald-500/20 text-xs uppercase tracking-wider"
                   >
-                    Save & Next Story
+                    Save & Next
                   </button>
                   <button
                     onClick={triggerRevote}
-                    className="px-6 py-2 bg-neutral-800 border border-neutral-700 text-white rounded-lg font-bold hover:bg-neutral-700 transition-colors cursor-pointer"
+                    className="px-5 py-1.5 bg-neutral-800 border border-neutral-700 text-white rounded-lg font-bold hover:bg-neutral-700 transition-colors cursor-pointer text-xs uppercase tracking-wider"
                   >
                     Re-vote
                   </button>
+                </div>
+
+                {tieInfo.isTie && (
+                  <div className="flex items-center gap-1.5 bg-neutral-900 border border-neutral-800 p-1 rounded-xl text-xs mt-1 select-none animate-fadeIn">
+                    <span className="text-neutral-500 px-2 font-medium">
+                      Tie-break:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setTiePreference("lower")}
+                      className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                        tiePreference === "lower"
+                          ? "bg-neutral-800 text-emerald-400 border border-neutral-700 shadow-sm"
+                          : "text-neutral-400 hover:text-neutral-200 border border-transparent"
+                      }`}
+                    >
+                      🔽 Lower ({tieInfo.lowest})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTiePreference("higher")}
+                      className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                        tiePreference === "higher"
+                          ? "bg-neutral-800 text-emerald-400 border border-neutral-700 shadow-sm"
+                          : "text-neutral-400 hover:text-neutral-200 border border-transparent"
+                      }`}
+                    >
+                      🔼 Higher ({tieInfo.highest})
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* SEKCIA 2: Hlavný stavový text a Hodnota */}
+            <div className="mt-1 min-h-[64px] flex flex-col justify-center items-center">
+              {isHost ? (
+                // Host vidí vždy čisté Suggested Estimate a veľké číslo, ktoré ukladá
+                <>
+                  <p className="text-neutral-500 text-[10px] uppercase tracking-widest font-bold mb-0.5">
+                    Suggested Estimate
+                  </p>
+                  <p className="text-4xl font-bold text-emerald-400 font-sans tracking-tight my-0.5">
+                    {finalValue}
+                  </p>
+                </>
+              ) : // Hráč vidí buď veľké číslo, alebo jasné varovanie o remíze BEZ mätúceho čísla
+              tieInfo.isTie ? (
+                <div className="my-1 animate-fadeIn text-center">
+                  <p className="text-amber-500 text-sm md:text-base uppercase tracking-wider font-extrabold mb-1">
+                    ⚠️ Split Vote ({tieInfo.lowest} vs {tieInfo.highest})
+                  </p>
+                  <p className="text-neutral-500 text-[10px] uppercase font-bold tracking-widest animate-pulse">
+                    ⏳ Awaiting Host Decision
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <p className="text-neutral-500 text-[10px] uppercase tracking-widest font-bold mb-0.5">
+                    Suggested Estimate
+                  </p>
+                  <p className="text-4xl font-bold text-emerald-400 font-sans tracking-tight my-0.5">
+                    {finalValue}
+                  </p>
                 </>
               )}
             </div>
 
-            <div className="text-center transition-opacity duration-300 flex flex-col items-center gap-1">
-              <div>
-                <p className="text-neutral-400 text-xs uppercase tracking-wider font-semibold mb-0.5">
-                  Average
-                </p>
-                <p className="text-4xl font-bold text-emerald-400">{average}</p>
-              </div>
-
-              {voteStats.length > 0 && (
-                <div className="flex flex-wrap justify-center gap-2 mt-2">
-                  {voteStats.map((stat) => (
-                    <div
-                      key={stat.card}
-                      className="bg-neutral-900 px-2.5 py-1 rounded-md text-xs border border-neutral-800 flex items-center gap-1.5"
-                    >
-                      <span className="font-bold text-white">{stat.card}</span>
-                      <span className="text-neutral-600">•</span>
-                      <span className="text-emerald-400">
-                        {stat.percentage}%
-                      </span>
-                      <span className="text-neutral-500">({stat.count})</span>
-                    </div>
-                  ))}
+            {/* SEKCIA 3: Štatistické pilulky (Pills) */}
+            {voteStats.length > 0 && (
+              <div className="flex flex-wrap justify-center items-center gap-2 mt-1">
+                <div
+                  className="bg-emerald-500/10 px-2.5 py-1 rounded-md text-xs border border-emerald-500/20 flex items-center gap-1 font-mono text-emerald-400 font-bold shadow-sm"
+                  title="Exact mathematical average"
+                >
+                  <span className="text-emerald-500/60 font-sans text-[10px] uppercase tracking-wider mr-0.5">
+                    avg
+                  </span>
+                  {average}
                 </div>
-              )}
-            </div>
-          </>
+
+                {voteStats.map((stat) => (
+                  <div
+                    key={stat.card}
+                    className="bg-neutral-900 px-2.5 py-1 rounded-md text-xs border border-neutral-800 flex items-center gap-1.5"
+                  >
+                    <span className="font-bold text-white">{stat.card}</span>
+                    <span className="text-neutral-600">•</span>
+                    <span className="text-emerald-400">{stat.percentage}%</span>
+                    <span className="text-neutral-500">({stat.count})</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
+
         {!isRevealed && displayedPlayers.length > 0 && (
           <div className="flex flex-col items-center gap-1.5 text-center">
             {!activeStory ? (
@@ -129,6 +286,7 @@ export const PlayerDesk: React.FC = () => {
         )}
       </div>
 
+      {/* Desk s hráčmi */}
       <div
         className={`flex flex-wrap content-start justify-center mb-4 min-h-[130px] w-full transition-all duration-300 ${
           isCrowded ? "gap-x-3 gap-y-5" : "gap-6"
