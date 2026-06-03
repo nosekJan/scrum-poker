@@ -45,6 +45,15 @@ export const StorySidebar: React.FC = () => {
     }
   };
 
+  const handleDeleteStory = (id: string, title: string) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${title}"?`,
+    );
+    if (confirmed) {
+      deleteStory(id);
+    }
+  };
+
   const activeCount = activeStory ? 1 : 0;
   const completedCount = completedStories.length;
   const allCount = completedCount + activeCount;
@@ -208,7 +217,7 @@ export const StorySidebar: React.FC = () => {
                     {isHost && (
                       <button
                         type="button"
-                        onClick={() => deleteStory(story.id)}
+                        onClick={() => handleDeleteStory(story.id, story.title)}
                         className="text-neutral-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded transition-colors cursor-pointer opacity-0 group-hover:opacity-100 font-mono"
                         title="Delete story from database"
                       >
@@ -269,7 +278,7 @@ export const StorySidebar: React.FC = () => {
                   {isHost && (
                     <button
                       type="button"
-                      onClick={() => deleteStory(story.id)}
+                      onClick={() => handleDeleteStory(story.id, story.title)}
                       className="text-neutral-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded transition-colors cursor-pointer opacity-0 group-hover:opacity-100 font-mono"
                       title="Delete story from database"
                     >
