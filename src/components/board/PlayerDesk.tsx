@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { usePoker } from "../../context/PokerContext";
 import { myUserId } from "../../hooks/usePokerGame";
 
@@ -74,37 +74,39 @@ export const PlayerDesk: React.FC = () => {
 
   const isCrowded = displayedPlayers.length > 10;
 
-  const emojiCache = useRef<Map<string, string>>(new Map());
-
   const playerEmojis = useMemo(() => {
-    const currentIds = new Set(displayedPlayers.map((p) => p.id));
-
-    for (const cachedId of emojiCache.current.keys()) {
-      if (!currentIds.has(cachedId)) {
-        emojiCache.current.delete(cachedId);
-      }
-    }
-
-    const usedEmojis = new Set<string>();
-    displayedPlayers.forEach((player) => {
-      if (emojiCache.current.has(player.id)) {
-        usedEmojis.add(emojiCache.current.get(player.id)!);
-      }
-    });
+    const sortedPlayers = [...displayedPlayers].sort((a, b) =>
+      a.id.localeCompare(b.id),
+    );
 
     const mapping: Record<string, string> = {};
-    displayedPlayers.forEach((player) => {
-      if (!emojiCache.current.has(player.id)) {
-        let availableEmojis = PLAYER_EMOJIS.filter((e) => !usedEmojis.has(e));
-        if (availableEmojis.length === 0) {
-          availableEmojis = PLAYER_EMOJIS;
-        }
-        const chosenEmoji =
-          availableEmojis[Math.floor(Math.random() * availableEmojis.length)];
-        emojiCache.current.set(player.id, chosenEmoji);
-        usedEmojis.add(chosenEmoji);
+    const usedEmojis = new Set<string>();
+
+    sortedPlayers.forEach((player) => {
+      const seedSource = (player as any).emojiSeed?.toString() || player.id;
+
+      let hash = 0;
+      for (let i = 0; i < seedSource.length; i++) {
+        hash = seedSource.charCodeAt(i) + ((hash << 5) - hash);
       }
-      mapping[player.id] = emojiCache.current.get(player.id)!;
+
+      let baseIndex = Math.abs(hash) % PLAYER_EMOJIS.length;
+      let chosenEmoji = PLAYER_EMOJIS[baseIndex];
+      let attempts = 0;
+
+      while (usedEmojis.has(chosenEmoji) && attempts < PLAYER_EMOJIS.length) {
+        baseIndex = (baseIndex + 1) % PLAYER_EMOJIS.length;
+        chosenEmoji = PLAYER_EMOJIS[baseIndex];
+        attempts++;
+      }
+
+      if (attempts >= PLAYER_EMOJIS.length) {
+        baseIndex = Math.abs(hash) % PLAYER_EMOJIS.length;
+        chosenEmoji = PLAYER_EMOJIS[baseIndex];
+      }
+
+      mapping[player.id] = chosenEmoji;
+      usedEmojis.add(chosenEmoji);
     });
 
     return mapping;
