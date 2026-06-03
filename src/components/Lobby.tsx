@@ -47,7 +47,8 @@ export const Lobby: React.FC<LobbyProps> = ({
     const savedHistory = localStorage.getItem("kestra_poker_history");
     if (savedHistory) {
       try {
-        setRoomHistory(JSON.parse(savedHistory));
+        const historyData = JSON.parse(savedHistory);
+        setRoomHistory(historyData.slice(0, 3));
       } catch (e) {
         console.error("Failed to parse room history:", e);
       }
@@ -78,7 +79,7 @@ export const Lobby: React.FC<LobbyProps> = ({
       const updatedHistory = [
         trimmedRoom,
         ...roomHistory.filter((r) => r !== trimmedRoom),
-      ].slice(0, 5);
+      ].slice(0, 3);
 
       setRoomHistory(updatedHistory);
       localStorage.setItem(
@@ -106,8 +107,8 @@ export const Lobby: React.FC<LobbyProps> = ({
     .replace(/\s+/g, "-");
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-neutral-950 px-4 font-sans">
-      <div className="w-full max-w-md p-8 bg-neutral-900 rounded-2xl border border-neutral-800 shadow-2xl">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-neutral-950 px-4 font-sans relative overflow-hidden">
+      <div className="w-full max-w-md p-8 bg-neutral-900 rounded-2xl border border-neutral-800 shadow-2xl z-10">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">
             Kestra Poker <span className="text-emerald-500">.</span>
@@ -221,7 +222,7 @@ export const Lobby: React.FC<LobbyProps> = ({
         </form>
 
         {roomHistory.length > 0 && (
-          <div className="mt-6 pt-6 border-t border-neutral-800/60">
+          <div className="mt-6 pt-6 border-t border-neutral-800/60 overflow-hidden">
             <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3 ml-1">
               Recent Rooms
             </p>

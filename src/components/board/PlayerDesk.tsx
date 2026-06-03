@@ -1,6 +1,59 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { usePoker } from "../../context/PokerContext";
 import { myUserId } from "../../hooks/usePokerGame";
+
+const PLAYER_EMOJIS = [
+  "🦊",
+  "🐰",
+  "🐼",
+  "🐨",
+  "🐯",
+  "🦁",
+  "🐸",
+  "🐵",
+  "🦉",
+  "🦄",
+  "🐙",
+  "🦖",
+  "🦥",
+  "🦦",
+  "👽",
+  "🤖",
+  "👻",
+  "🦫",
+  "🦩",
+  "🐢",
+  "🐶",
+  "🐱",
+  "🐭",
+  "🐹",
+  "🐻",
+  "🐷",
+  "🐮",
+  "🐔",
+  "🐧",
+  "🐦",
+  "🐤",
+  "🦆",
+  "🦅",
+  "🦇",
+  "🐺",
+  "🐗",
+  "🐴",
+  "🐝",
+  "🦋",
+  "🐌",
+  "🐞",
+  "🐜",
+  "🦂",
+  "🕷️",
+  "🐒",
+  "🦍",
+  "🦧",
+  "🐕",
+  "🐈",
+  "🐆",
+];
 
 export const PlayerDesk: React.FC = () => {
   const {
@@ -20,6 +73,42 @@ export const PlayerDesk: React.FC = () => {
   }, [isRevealed, votesSnapshot, players]);
 
   const isCrowded = displayedPlayers.length > 10;
+
+  const emojiCache = useRef<Map<string, string>>(new Map());
+
+  const playerEmojis = useMemo(() => {
+    const currentIds = new Set(displayedPlayers.map((p) => p.id));
+
+    for (const cachedId of emojiCache.current.keys()) {
+      if (!currentIds.has(cachedId)) {
+        emojiCache.current.delete(cachedId);
+      }
+    }
+
+    const usedEmojis = new Set<string>();
+    displayedPlayers.forEach((player) => {
+      if (emojiCache.current.has(player.id)) {
+        usedEmojis.add(emojiCache.current.get(player.id)!);
+      }
+    });
+
+    const mapping: Record<string, string> = {};
+    displayedPlayers.forEach((player) => {
+      if (!emojiCache.current.has(player.id)) {
+        let availableEmojis = PLAYER_EMOJIS.filter((e) => !usedEmojis.has(e));
+        if (availableEmojis.length === 0) {
+          availableEmojis = PLAYER_EMOJIS;
+        }
+        const chosenEmoji =
+          availableEmojis[Math.floor(Math.random() * availableEmojis.length)];
+        emojiCache.current.set(player.id, chosenEmoji);
+        usedEmojis.add(chosenEmoji);
+      }
+      mapping[player.id] = emojiCache.current.get(player.id)!;
+    });
+
+    return mapping;
+  }, [displayedPlayers]);
 
   const average = useMemo(() => {
     const validVotes = displayedPlayers
@@ -56,58 +145,199 @@ export const PlayerDesk: React.FC = () => {
       .sort((a, b) => b.count - a.count);
   }, [displayedPlayers, isRevealed]);
 
+  const [tiePreference, setTiePreference] = useState<"higher" | "lower">(
+    "higher",
+  );
+
+  useEffect(() => {
+    if (!isRevealed) {
+      setTiePreference("higher");
+    }
+  }, [isRevealed]);
+
+  const tieInfo = useMemo(() => {
+    if (voteStats.length === 0)
+      return { isTie: false, lowest: "", highest: "" };
+
+    const maxCount = voteStats[0].count;
+    const topCards = voteStats
+      .filter((s) => s.count === maxCount)
+      .map((s) => s.card);
+
+    if (topCards.length < 2) {
+      return { isTie: false, lowest: topCards[0], highest: topCards[0] };
+    }
+
+    const numAverage = parseFloat(average);
+    if (isNaN(numAverage)) {
+      const sorted = [...topCards].sort(
+        (a, b) => parseFloat(a) - parseFloat(b),
+      );
+      return {
+        isTie: true,
+        lowest: sorted[0],
+        highest: sorted[sorted.length - 1],
+      };
+    }
+
+    const numericCards = topCards
+      .map((c) => ({ string: c, number: parseFloat(c) }))
+      .filter((c) => !isNaN(c.number));
+
+    const belowOrEqual = numericCards.filter((c) => c.number <= numAverage);
+    const aboveOrEqual = numericCards.filter((c) => c.number >= numAverage);
+
+    let smartLower = "";
+    let smartHigher = "";
+
+    if (belowOrEqual.length > 0) {
+      belowOrEqual.sort((a, b) => b.number - a.number);
+      smartLower = belowOrEqual[0].string;
+    } else {
+      const sorted = [...numericCards].sort((a, b) => a.number - b.number);
+      smartLower = sorted[0].string;
+    }
+
+    if (aboveOrEqual.length > 0) {
+      aboveOrEqual.sort((a, b) => a.number - b.number);
+      smartHigher = aboveOrEqual[0].string;
+    } else {
+      const sorted = [...numericCards].sort((a, b) => b.number - a.number);
+      smartHigher = sorted[0].string;
+    }
+
+    if (smartLower === smartHigher) {
+      return { isTie: false, lowest: smartLower, highest: smartHigher };
+    }
+
+    return {
+      isTie: true,
+      lowest: smartLower,
+      highest: smartHigher,
+    };
+  }, [voteStats, average]);
+
+  const finalValue = useMemo(() => {
+    if (voteStats.length === 0) return "—";
+    if (tieInfo.isTie) {
+      return tiePreference === "higher" ? tieInfo.highest : tieInfo.lowest;
+    }
+    return voteStats[0].card;
+  }, [voteStats, tieInfo, tiePreference]);
+
   return (
     <div className="lg:col-span-2 flex flex-col items-center">
       <div className="mb-4 flex flex-col items-center gap-2 min-h-[100px] justify-center w-full">
         {isRevealed && (
-          <>
-            <div className="flex gap-4">
-              {isHost && (
-                <>
+          <div className="text-center transition-opacity duration-300 flex flex-col items-center gap-2 w-full">
+            {isHost && (
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex gap-3">
                   <button
-                    onClick={() => saveAndNextStory(average)}
-                    className="px-6 py-2 bg-emerald-500 text-white rounded-lg font-bold hover:bg-emerald-600 transition-colors cursor-pointer shadow-lg shadow-emerald-500/20"
+                    onClick={() => saveAndNextStory(finalValue)}
+                    className="px-5 py-1.5 bg-emerald-500 text-white rounded-lg font-bold hover:bg-emerald-600 transition-colors cursor-pointer shadow-lg shadow-emerald-500/20 text-xs uppercase tracking-wider"
                   >
-                    Save & Next Story
+                    Save & Next
                   </button>
                   <button
                     onClick={triggerRevote}
-                    className="px-6 py-2 bg-neutral-800 border border-neutral-700 text-white rounded-lg font-bold hover:bg-neutral-700 transition-colors cursor-pointer"
+                    className="px-5 py-1.5 bg-neutral-800 border border-neutral-700 text-white rounded-lg font-bold hover:bg-neutral-700 transition-colors cursor-pointer text-xs uppercase tracking-wider"
                   >
                     Re-vote
                   </button>
+                </div>
+
+                {tieInfo.isTie && (
+                  <div className="flex items-center gap-1.5 bg-neutral-900 border border-neutral-800 p-1 rounded-xl text-xs mt-1 select-none animate-fadeIn">
+                    <span className="text-neutral-500 px-2 font-medium">
+                      Tie-break:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setTiePreference("lower")}
+                      className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                        tiePreference === "lower"
+                          ? "bg-neutral-800 text-emerald-400 border border-neutral-700 shadow-sm"
+                          : "text-neutral-400 hover:text-neutral-200 border border-transparent"
+                      }`}
+                    >
+                      🔽 Lower ({tieInfo.lowest})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTiePreference("higher")}
+                      className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                        tiePreference === "higher"
+                          ? "bg-neutral-800 text-emerald-400 border border-neutral-700 shadow-sm"
+                          : "text-neutral-400 hover:text-neutral-200 border border-transparent"
+                      }`}
+                    >
+                      🔼 Higher ({tieInfo.highest})
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="mt-1 min-h-[64px] flex flex-col justify-center items-center">
+              {isHost ? (
+                <>
+                  <p className="text-neutral-500 text-[10px] uppercase tracking-widest font-bold mb-0.5">
+                    Suggested Estimate
+                  </p>
+                  <p className="text-4xl font-bold text-emerald-400 font-sans tracking-tight my-0.5">
+                    {finalValue}
+                  </p>
+                </>
+              ) : tieInfo.isTie ? (
+                <div className="my-1 animate-fadeIn text-center">
+                  <p className="text-amber-500 text-sm md:text-base font-extrabold mb-1">
+                    ⚠️ Split vote ({tieInfo.lowest} vs {tieInfo.highest})
+                  </p>
+                  <p className="text-neutral-500 text-[10px] font-medium animate-pulse">
+                    ⏳ Awaiting host decision...
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <p className="text-neutral-500 text-[10px] uppercase tracking-widest font-bold mb-0.5">
+                    Suggested Estimate
+                  </p>
+                  <p className="text-4xl font-bold text-emerald-400 font-sans tracking-tight my-0.5">
+                    {finalValue}
+                  </p>
                 </>
               )}
             </div>
 
-            <div className="text-center transition-opacity duration-300 flex flex-col items-center gap-1">
-              <div>
-                <p className="text-neutral-400 text-xs uppercase tracking-wider font-semibold mb-0.5">
-                  Average
-                </p>
-                <p className="text-4xl font-bold text-emerald-400">{average}</p>
-              </div>
-
-              {voteStats.length > 0 && (
-                <div className="flex flex-wrap justify-center gap-2 mt-2">
-                  {voteStats.map((stat) => (
-                    <div
-                      key={stat.card}
-                      className="bg-neutral-900 px-2.5 py-1 rounded-md text-xs border border-neutral-800 flex items-center gap-1.5"
-                    >
-                      <span className="font-bold text-white">{stat.card}</span>
-                      <span className="text-neutral-600">•</span>
-                      <span className="text-emerald-400">
-                        {stat.percentage}%
-                      </span>
-                      <span className="text-neutral-500">({stat.count})</span>
-                    </div>
-                  ))}
+            {voteStats.length > 0 && (
+              <div className="flex flex-wrap justify-center items-center gap-2 mt-1">
+                <div
+                  className="bg-emerald-500/10 px-2.5 py-1 rounded-md text-xs border border-emerald-500/20 flex items-center gap-1 font-mono text-emerald-400 font-bold shadow-sm"
+                  title="Exact mathematical average"
+                >
+                  <span className="text-emerald-500/60 font-sans text-[10px] uppercase tracking-wider mr-0.5">
+                    avg
+                  </span>
+                  {average}
                 </div>
-              )}
-            </div>
-          </>
+
+                {voteStats.map((stat) => (
+                  <div
+                    key={stat.card}
+                    className="bg-neutral-900 px-2.5 py-1 rounded-md text-xs border border-neutral-800 flex items-center gap-1.5"
+                  >
+                    <span className="font-bold text-white">{stat.card}</span>
+                    <span className="text-neutral-600">•</span>
+                    <span className="text-emerald-400">{stat.percentage}%</span>
+                    <span className="text-neutral-500">({stat.count})</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
+
         {!isRevealed && displayedPlayers.length > 0 && (
           <div className="flex flex-col items-center gap-1.5 text-center">
             {!activeStory ? (
@@ -130,8 +360,8 @@ export const PlayerDesk: React.FC = () => {
       </div>
 
       <div
-        className={`flex flex-wrap content-start justify-center mb-4 min-h-[130px] w-full transition-all duration-300 ${
-          isCrowded ? "gap-x-3 gap-y-5" : "gap-6"
+        className={`flex flex-wrap content-start justify-center mb-4 min-h-[100px] w-full transition-all duration-300 ${
+          isCrowded ? "gap-x-2 gap-y-2.5" : "gap-6"
         }`}
       >
         {displayedPlayers.map((player) => {
@@ -141,13 +371,13 @@ export const PlayerDesk: React.FC = () => {
           return (
             <div
               key={player.id}
-              className={`flex flex-col items-center gap-2 transition-all duration-300 text-center ${
-                isCrowded ? "w-[76px]" : "w-[90px]"
+              className={`flex flex-col items-center transition-all duration-300 text-center ${
+                isCrowded ? "w-[64px] gap-1" : "w-[90px] gap-2"
               } ${isOffline ? "opacity-40 scale-95" : "opacity-100 scale-100"}`}
             >
               <div
                 className={`transition-all duration-300 relative [perspective:1000px] ${
-                  isCrowded ? "w-12 h-16" : "w-14 h-20"
+                  isCrowded ? "w-10 h-14" : "w-14 h-20"
                 }`}
               >
                 <div
@@ -158,30 +388,38 @@ export const PlayerDesk: React.FC = () => {
                   <div
                     className={`absolute inset-0 w-full h-full rounded-xl border flex items-center justify-center [backface-visibility:hidden] transition-all duration-300 ${
                       player.selectedCard
-                        ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-400"
+                        ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-400 text-xs"
                         : "bg-neutral-900 border-neutral-800 text-neutral-600"
-                    } ${isCrowded ? "text-sm" : "text-base"}`}
+                    }`}
                   >
-                    {player.selectedCard ? "✔️" : "🤔"}
+                    {player.selectedCard ? (
+                      "✔️"
+                    ) : (
+                      <span className={isCrowded ? "text-xl" : "text-3xl"}>
+                        {playerEmojis[player.id]}
+                      </span>
+                    )}
                   </div>
 
                   <div
                     className={`absolute inset-0 w-full h-full rounded-xl border flex items-center justify-center [backface-visibility:hidden] [transform:rotateY(180deg)] transition-all duration-300 ${
                       player.selectedCard
-                        ? "bg-emerald-500 border-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                        ? "bg-emerald-500 border border-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]"
                         : "bg-neutral-900 border-neutral-800 text-neutral-600"
                     }`}
                   >
                     {player.selectedCard ? (
                       <span
                         className={`font-bold transition-all ${
-                          isCrowded ? "text-base" : "text-lg"
+                          isCrowded ? "text-sm" : "text-lg"
                         }`}
                       >
                         {player.selectedCard}
                       </span>
                     ) : (
-                      "🤔"
+                      <span className={isCrowded ? "text-xl" : "text-3xl"}>
+                        {playerEmojis[player.id]}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -190,7 +428,7 @@ export const PlayerDesk: React.FC = () => {
                   <span
                     className={`absolute transform rotate-12 drop-shadow-md z-20 transition-all ${
                       isCrowded
-                        ? "-top-3 -right-2 text-base"
+                        ? "-top-2.5 -right-1.5 text-sm"
                         : "-top-3.5 -right-3 text-lg"
                     }`}
                   >

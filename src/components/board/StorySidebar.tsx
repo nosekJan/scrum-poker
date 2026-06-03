@@ -45,12 +45,21 @@ export const StorySidebar: React.FC = () => {
     }
   };
 
+  const handleDeleteStory = (id: string, title: string) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${title}"?`,
+    );
+    if (confirmed) {
+      deleteStory(id);
+    }
+  };
+
   const activeCount = activeStory ? 1 : 0;
   const completedCount = completedStories.length;
   const allCount = completedCount + activeCount;
 
   return (
-    <div className="bg-neutral-900/60 border border-neutral-900/80 rounded-2xl p-5 flex flex-col h-full min-h-[340px] lg:min-h-0">
+    <div className="bg-neutral-900/60 border border-neutral-900/80 rounded-2xl p-5 flex flex-col w-full h-[calc(100vh-390px)]">
       <div className="flex border-b border-neutral-800 mb-4 text-xs font-semibold tracking-wide uppercase">
         <button
           onClick={() => setActiveTab("active")}
@@ -146,7 +155,8 @@ export const StorySidebar: React.FC = () => {
                   placeholder="e.g. Change Stability label in CareStation"
                   className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-emerald-500/50 min-h-[80px] resize-none"
                 />
-                <p className="text-[11px] text-neutral-600 text-left -mt-1 px-1 hidden sm:block select-none">
+                <p className="text-[11px] text-neutral-600 text-left -mt-1 px-1 select-none">
+                  {" "}
                   Tip: Press{" "}
                   <span className="font-mono bg-neutral-950 px-1 py-0.5 rounded border border-neutral-800/60">
                     Ctrl + Enter
@@ -206,7 +216,8 @@ export const StorySidebar: React.FC = () => {
                     </div>
                     {isHost && (
                       <button
-                        onClick={() => deleteStory(story.id)}
+                        type="button"
+                        onClick={() => handleDeleteStory(story.id, story.title)}
                         className="text-neutral-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded transition-colors cursor-pointer opacity-0 group-hover:opacity-100 font-mono"
                         title="Delete story from database"
                       >
@@ -266,7 +277,8 @@ export const StorySidebar: React.FC = () => {
                   </div>
                   {isHost && (
                     <button
-                      onClick={() => deleteStory(story.id)}
+                      type="button"
+                      onClick={() => handleDeleteStory(story.id, story.title)}
                       className="text-neutral-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded transition-colors cursor-pointer opacity-0 group-hover:opacity-100 font-mono"
                       title="Delete story from database"
                     >
