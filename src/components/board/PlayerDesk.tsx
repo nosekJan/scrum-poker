@@ -21,7 +21,6 @@ export const PlayerDesk: React.FC = () => {
 
   const isCrowded = displayedPlayers.length > 10;
 
-  // 1. Presný matematický priemer (pre malý zelený štítok)
   const average = useMemo(() => {
     const validVotes = displayedPlayers
       .map((p) => parseFloat(p.selectedCard as string))
@@ -37,7 +36,6 @@ export const PlayerDesk: React.FC = () => {
     ).toFixed(1);
   }, [displayedPlayers]);
 
-  // 2. Štatistiky hlasovania zoradené od najpoužívanejšej karty
   const voteStats = useMemo(() => {
     if (!isRevealed) return [];
     const stats: Record<string, number> = {};
@@ -58,19 +56,16 @@ export const PlayerDesk: React.FC = () => {
       .sort((a, b) => b.count - a.count);
   }, [displayedPlayers, isRevealed]);
 
-  // Lokálny stav pre voľbu hosta pri remíze (Tie-break)
   const [tiePreference, setTiePreference] = useState<"higher" | "lower">(
     "higher",
   );
 
-  // Automatický reset prepínača pri novom hlasovaní
   useEffect(() => {
     if (!isRevealed) {
       setTiePreference("higher");
     }
   }, [isRevealed]);
 
-  // 3. Inteligentná detekcia remízy ukotvená o matematický priemer (Smart Anchor)
   const tieInfo = useMemo(() => {
     if (voteStats.length === 0)
       return { isTie: false, lowest: "", highest: "" };
@@ -96,12 +91,10 @@ export const PlayerDesk: React.FC = () => {
       };
     }
 
-    // Prevedieme karty na čísla pre presný matematický filter
     const numericCards = topCards
       .map((c) => ({ string: c, number: parseFloat(c) }))
       .filter((c) => !isNaN(c.number));
 
-    // Rozdelíme karty na tie pod priemerom a nad priemerom
     const belowOrEqual = numericCards.filter((c) => c.number <= numAverage);
     const aboveOrEqual = numericCards.filter((c) => c.number >= numAverage);
 
@@ -109,7 +102,6 @@ export const PlayerDesk: React.FC = () => {
     let smartHigher = "";
 
     if (belowOrEqual.length > 0) {
-      // Nájdeme kartu najbližšiu k priemeru zhasnutím smerom nadol
       belowOrEqual.sort((a, b) => b.number - a.number);
       smartLower = belowOrEqual[0].string;
     } else {
@@ -118,7 +110,6 @@ export const PlayerDesk: React.FC = () => {
     }
 
     if (aboveOrEqual.length > 0) {
-      // Nájdeme kartu najbližšiu k priemeru zhasnutím smerom nahor
       aboveOrEqual.sort((a, b) => a.number - b.number);
       smartHigher = aboveOrEqual[0].string;
     } else {
@@ -126,7 +117,6 @@ export const PlayerDesk: React.FC = () => {
       smartHigher = sorted[0].string;
     }
 
-    // Ak sa spodná aj horná najbližšia karta rovnajú (napr. priemer sadol presne na stredovú kartu pri 3 ľuďoch)
     if (smartLower === smartHigher) {
       return { isTie: false, lowest: smartLower, highest: smartHigher };
     }
@@ -138,7 +128,6 @@ export const PlayerDesk: React.FC = () => {
     };
   }, [voteStats, average]);
 
-  // 4. Výsledná celá karta priradená k úlohe
   const finalValue = useMemo(() => {
     if (voteStats.length === 0) return "—";
     if (tieInfo.isTie) {
@@ -152,7 +141,6 @@ export const PlayerDesk: React.FC = () => {
       <div className="mb-4 flex flex-col items-center gap-2 min-h-[100px] justify-center w-full">
         {isRevealed && (
           <div className="text-center transition-opacity duration-300 flex flex-col items-center gap-2 w-full">
-            {/* SEKCOU 1: Ovládacie prvky - IBA PRE HOSTA */}
             {isHost && (
               <div className="flex flex-col items-center gap-2">
                 <div className="flex gap-3">
@@ -202,10 +190,8 @@ export const PlayerDesk: React.FC = () => {
               </div>
             )}
 
-            {/* SEKCIA 2: Hlavný stavový text a Hodnota */}
             <div className="mt-1 min-h-[64px] flex flex-col justify-center items-center">
               {isHost ? (
-                // Host vidí vždy čisté Suggested Estimate a veľké číslo, ktoré ukladá
                 <>
                   <p className="text-neutral-500 text-[10px] uppercase tracking-widest font-bold mb-0.5">
                     Suggested Estimate
@@ -214,10 +200,9 @@ export const PlayerDesk: React.FC = () => {
                     {finalValue}
                   </p>
                 </>
-              ) : // Hráč vidí buď veľké číslo, alebo jasné varovanie o remíze BEZ mätúceho čísla
-              tieInfo.isTie ? (
+              ) : tieInfo.isTie ? (
                 <div className="my-1 animate-fadeIn text-center">
-                  <p className="text-amber-500 text-sm md:text-base uppercase tracking-wider font-extrabold mb-1">
+                  <p className="text-amber-500 text-sm md:text-base font-extrabold mb-1">
                     ⚠️ Split Vote ({tieInfo.lowest} vs {tieInfo.highest})
                   </p>
                   <p className="text-neutral-500 text-[10px] uppercase font-bold tracking-widest animate-pulse">
@@ -236,7 +221,6 @@ export const PlayerDesk: React.FC = () => {
               )}
             </div>
 
-            {/* SEKCIA 3: Štatistické pilulky (Pills) */}
             {voteStats.length > 0 && (
               <div className="flex flex-wrap justify-center items-center gap-2 mt-1">
                 <div
@@ -286,7 +270,6 @@ export const PlayerDesk: React.FC = () => {
         )}
       </div>
 
-      {/* Desk s hráčmi */}
       <div
         className={`flex flex-wrap content-start justify-center mb-4 min-h-[130px] w-full transition-all duration-300 ${
           isCrowded ? "gap-x-3 gap-y-5" : "gap-6"

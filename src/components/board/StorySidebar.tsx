@@ -146,7 +146,8 @@ export const StorySidebar: React.FC = () => {
                   placeholder="e.g. Change Stability label in CareStation"
                   className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-emerald-500/50 min-h-[80px] resize-none"
                 />
-                <p className="text-[11px] text-neutral-600 text-left -mt-1 px-1 hidden sm:block select-none">
+                <p className="text-[11px] text-neutral-600 text-left -mt-1 px-1 select-none">
+                  {" "}
                   Tip: Press{" "}
                   <span className="font-mono bg-neutral-950 px-1 py-0.5 rounded border border-neutral-800/60">
                     Ctrl + Enter

@@ -65,7 +65,7 @@ export const VotingDeck: React.FC = () => {
           : "opacity-100 pointer-events-auto"
       }`}
     >
-      <p className="text-center text-xs text-neutral-500 mb-2 font-medium tracking-wide">
+      <p className="text-xs font-medium text-neutral-400/80 text-center mb-4 select-none">
         {!activeStory
           ? isHost
             ? "Set an active story to start voting"
