@@ -50,7 +50,7 @@ export const StorySidebar: React.FC = () => {
   const allCount = completedCount + activeCount;
 
   return (
-    <div className="bg-neutral-900/60 border border-neutral-900/80 rounded-2xl p-5 flex flex-col h-full min-h-[340px] lg:min-h-0">
+    <div className="bg-neutral-900/60 border border-neutral-900/80 rounded-2xl p-5 flex flex-col w-full h-[calc(100vh-390px)]">
       <div className="flex border-b border-neutral-800 mb-4 text-xs font-semibold tracking-wide uppercase">
         <button
           onClick={() => setActiveTab("active")}
@@ -207,6 +207,7 @@ export const StorySidebar: React.FC = () => {
                     </div>
                     {isHost && (
                       <button
+                        type="button"
                         onClick={() => deleteStory(story.id)}
                         className="text-neutral-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded transition-colors cursor-pointer opacity-0 group-hover:opacity-100 font-mono"
                         title="Delete story from database"
@@ -267,6 +268,7 @@ export const StorySidebar: React.FC = () => {
                   </div>
                   {isHost && (
                     <button
+                      type="button"
                       onClick={() => deleteStory(story.id)}
                       className="text-neutral-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded transition-colors cursor-pointer opacity-0 group-hover:opacity-100 font-mono"
                       title="Delete story from database"

@@ -203,10 +203,10 @@ export const PlayerDesk: React.FC = () => {
               ) : tieInfo.isTie ? (
                 <div className="my-1 animate-fadeIn text-center">
                   <p className="text-amber-500 text-sm md:text-base font-extrabold mb-1">
-                    ⚠️ Split Vote ({tieInfo.lowest} vs {tieInfo.highest})
+                    ⚠️ Split vote ({tieInfo.lowest} vs {tieInfo.highest})
                   </p>
-                  <p className="text-neutral-500 text-[10px] uppercase font-bold tracking-widest animate-pulse">
-                    ⏳ Awaiting Host Decision
+                  <p className="text-neutral-500 text-[10px] font-medium animate-pulse">
+                    ⏳ Awaiting host decision...
                   </p>
                 </div>
               ) : (
@@ -271,8 +271,8 @@ export const PlayerDesk: React.FC = () => {
       </div>
 
       <div
-        className={`flex flex-wrap content-start justify-center mb-4 min-h-[130px] w-full transition-all duration-300 ${
-          isCrowded ? "gap-x-3 gap-y-5" : "gap-6"
+        className={`flex flex-wrap content-start justify-center mb-4 min-h-[100px] w-full transition-all duration-300 ${
+          isCrowded ? "gap-x-2 gap-y-2.5" : "gap-6"
         }`}
       >
         {displayedPlayers.map((player) => {
@@ -282,13 +282,13 @@ export const PlayerDesk: React.FC = () => {
           return (
             <div
               key={player.id}
-              className={`flex flex-col items-center gap-2 transition-all duration-300 text-center ${
-                isCrowded ? "w-[76px]" : "w-[90px]"
+              className={`flex flex-col items-center transition-all duration-300 text-center ${
+                isCrowded ? "w-[64px] gap-1" : "w-[90px] gap-2"
               } ${isOffline ? "opacity-40 scale-95" : "opacity-100 scale-100"}`}
             >
               <div
                 className={`transition-all duration-300 relative [perspective:1000px] ${
-                  isCrowded ? "w-12 h-16" : "w-14 h-20"
+                  isCrowded ? "w-10 h-14" : "w-14 h-20"
                 }`}
               >
                 <div
@@ -301,7 +301,7 @@ export const PlayerDesk: React.FC = () => {
                       player.selectedCard
                         ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-400"
                         : "bg-neutral-900 border-neutral-800 text-neutral-600"
-                    } ${isCrowded ? "text-sm" : "text-base"}`}
+                    } ${isCrowded ? "text-xs" : "text-base"}`}
                   >
                     {player.selectedCard ? "✔️" : "🤔"}
                   </div>
@@ -316,7 +316,7 @@ export const PlayerDesk: React.FC = () => {
                     {player.selectedCard ? (
                       <span
                         className={`font-bold transition-all ${
-                          isCrowded ? "text-base" : "text-lg"
+                          isCrowded ? "text-sm" : "text-lg"
                         }`}
                       >
                         {player.selectedCard}
@@ -331,7 +331,7 @@ export const PlayerDesk: React.FC = () => {
                   <span
                     className={`absolute transform rotate-12 drop-shadow-md z-20 transition-all ${
                       isCrowded
-                        ? "-top-3 -right-2 text-base"
+                        ? "-top-2.5 -right-1.5 text-sm"
                         : "-top-3.5 -right-3 text-lg"
                     }`}
                   >
