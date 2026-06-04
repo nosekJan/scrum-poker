@@ -1,4 +1,4 @@
-# Kestra Poker 🃏
+# Scrum Poker 🃏
 
 A modern, fast, and lightweight web application for Planning Poker (Scrum Poker) designed for an unlimited number of participants. This project was created as an internal IDP solution to replace limited external tools.
 
@@ -43,7 +43,7 @@ A modern, fast, and lightweight web application for Planning Poker (Scrum Poker)
 
 ```bash
 git clone <your-repo-url>
-cd css-poker
+cd scrum-poker
 npm install
 npm run dev
 ```

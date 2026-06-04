@@ -32,7 +32,7 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
     <header className="flex justify-between items-center mb-4 lg:mb-3 max-w-5xl mx-auto w-full">
       <div className="flex items-center gap-6">
         <h1 className="text-xl font-bold whitespace-nowrap">
-          Kestra Poker <span className="text-emerald-500">.</span>
+          Scrum Poker <span className="text-emerald-500">.</span>
         </h1>
         <button
           onClick={handleCopyInvite}

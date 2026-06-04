@@ -41,10 +41,10 @@ export const Lobby: React.FC<LobbyProps> = ({
   };
 
   useEffect(() => {
-    const savedName = localStorage.getItem("kestra_poker_name");
+    const savedName = localStorage.getItem("scrum_poker_name");
     if (savedName) setName(savedName);
 
-    const savedHistory = localStorage.getItem("kestra_poker_history");
+    const savedHistory = localStorage.getItem("scrum_poker_history");
     if (savedHistory) {
       try {
         const historyData = JSON.parse(savedHistory);
@@ -62,7 +62,7 @@ export const Lobby: React.FC<LobbyProps> = ({
     } else if (urlRoomId) {
       setRoomId(urlRoomId);
     } else {
-      const savedRoom = localStorage.getItem("kestra_poker_room");
+      const savedRoom = localStorage.getItem("scrum_poker_room");
       if (savedRoom) setRoomId(savedRoom);
     }
   }, [initialRoomId]);
@@ -73,8 +73,8 @@ export const Lobby: React.FC<LobbyProps> = ({
     const trimmedRoom = roomId.trim().toLowerCase().replace(/\s+/g, "-");
 
     if (trimmedName && trimmedRoom) {
-      localStorage.setItem("kestra_poker_name", trimmedName);
-      localStorage.setItem("kestra_poker_room", trimmedRoom);
+      localStorage.setItem("scrum_poker_name", trimmedName);
+      localStorage.setItem("scrum_poker_room", trimmedRoom);
 
       const updatedHistory = [
         trimmedRoom,
@@ -83,7 +83,7 @@ export const Lobby: React.FC<LobbyProps> = ({
 
       setRoomHistory(updatedHistory);
       localStorage.setItem(
-        "kestra_poker_history",
+        "scrum_poker_history",
         JSON.stringify(updatedHistory),
       );
 
@@ -95,10 +95,7 @@ export const Lobby: React.FC<LobbyProps> = ({
     e.stopPropagation();
     const updatedHistory = roomHistory.filter((r) => r !== roomToDelete);
     setRoomHistory(updatedHistory);
-    localStorage.setItem(
-      "kestra_poker_history",
-      JSON.stringify(updatedHistory),
-    );
+    localStorage.setItem("scrum_poker_history", JSON.stringify(updatedHistory));
   };
 
   const currentNormalizedRoom = roomId
@@ -111,7 +108,7 @@ export const Lobby: React.FC<LobbyProps> = ({
       <div className="w-full max-w-md p-8 bg-neutral-900 rounded-2xl border border-neutral-800 shadow-2xl z-10">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">
-            Kestra Poker <span className="text-emerald-500">.</span>
+            Scrum Poker <span className="text-emerald-500">.</span>
           </h1>
           <p className="text-neutral-400">Join a planning session</p>
         </div>
@@ -157,7 +154,7 @@ export const Lobby: React.FC<LobbyProps> = ({
                 type="text"
                 value={roomId}
                 onChange={(e) => setRoomId(e.target.value)}
-                placeholder="e.g. carestation-team"
+                placeholder="e.g. development-room"
                 maxLength={30}
                 className="w-full pl-4 pr-12 py-3 bg-neutral-950 border border-neutral-800 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono text-sm"
               />

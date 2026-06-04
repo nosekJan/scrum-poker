@@ -17,8 +17,8 @@ function HomeRoute() {
   const errorMsg = location.state?.error;
 
   const handleJoin = (name: string, roomId: string, isCreating: boolean) => {
-    localStorage.setItem("kestra_poker_name", name);
-    localStorage.setItem("kestra_poker_room", roomId);
+    localStorage.setItem("scrum_poker_name", name);
+    localStorage.setItem("scrum_poker_room", roomId);
     navigate(`/room/${roomId}`, { state: { isCreating } });
   };
 
@@ -35,7 +35,7 @@ function RoomRoute() {
 
   useEffect(() => {
     const checkRoomAccess = async () => {
-      const savedName = localStorage.getItem("kestra_poker_name");
+      const savedName = localStorage.getItem("scrum_poker_name");
       if (savedName) {
         setPlayerName(savedName);
       }
@@ -81,8 +81,8 @@ function RoomRoute() {
       <Lobby
         initialRoomId={roomId}
         onJoin={(name, joinedRoomId, isCreating) => {
-          localStorage.setItem("kestra_poker_name", name);
-          localStorage.setItem("kestra_poker_room", joinedRoomId);
+          localStorage.setItem("scrum_poker_name", name);
+          localStorage.setItem("scrum_poker_room", joinedRoomId);
           setPlayerName(name);
           if (joinedRoomId !== roomId) {
             navigate(`/room/${joinedRoomId}`, { state: { isCreating } });
