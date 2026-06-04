@@ -152,7 +152,7 @@ export const StorySidebar: React.FC = () => {
                   value={storyInput}
                   onChange={(e) => setStoryInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="e.g. Change Stability label in CareStation"
+                  placeholder="e.g. Refactor authentication module in Core Application"
                   className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-emerald-500/50 min-h-[80px] resize-none"
                 />
                 <p className="text-[11px] text-neutral-600 text-left -mt-1 px-1 select-none">
