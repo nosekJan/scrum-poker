@@ -397,7 +397,7 @@ export const PlayerDesk: React.FC = () => {
                     {player.selectedCard ? (
                       "✔️"
                     ) : (
-                      <span className={isCrowded ? "text-xl" : "text-3xl"}>
+                      <span className={isCrowded ? "text-xl" : "text-2xl"}>
                         {playerEmojis[player.id]}
                       </span>
                     )}
@@ -419,7 +419,7 @@ export const PlayerDesk: React.FC = () => {
                         {player.selectedCard}
                       </span>
                     ) : (
-                      <span className={isCrowded ? "text-xl" : "text-3xl"}>
+                      <span className={isCrowded ? "text-xl" : "text-2xl"}>
                         {playerEmojis[player.id]}
                       </span>
                     )}

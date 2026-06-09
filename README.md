@@ -9,6 +9,7 @@ A modern, fast, and lightweight web application for Planning Poker (Scrum Poker)
 - **Smart Host Tie-Break Engine:** Instantly evaluates split decisions when multiple cards match the highest pick count, using a mathematical average anchor to provide hosts with precise Higher vs. Lower override parameters.
 - **Fluid Viewport Calculation Height:** Utilizes custom dynamic viewport constraints (`calc(100vh - 390px)`) to keep the right-hand panel perfectly matched to the board layout without dropping cards below the OS taskbar edge.
 - **Crowded Room Spacing Engine:** Automatically compresses card asset dimensions to compact bounding frames (`w-10 h-14`) and close grid spacing once a session scales past 10 active players, squeezing massive 15+ user rooms into two concise, readable columns.
+- **Ergonomic Card Asset Padding:** Downscaled baseline player avatar emojis from `text-3xl` to `text-2xl` to inject enhanced internal padding and breathing room within standard card frames, preventing visual asset clipping while leaving the compact `text-xl` footprint untouched for crowded scenarios.
 - **Unique Cached Session Emojis:** Assigns incoming participants a unique, high-visibility animal identifier from an expanded 50-emoji pool. Choices are mapped deterministically against active room seats to eliminate immediate identical duplicates.
 - **Destructive Action Safety Gates:** Intercepts database eviction triggers with native asynchronous modal prompt gatekeepers, blocking accidental target clearances during high-speed scroll motions.
 - **Lobby Navigation & Recent Rooms History:** Persists up to 3 previously visited planning rooms inside local browser storage to prevent layout overflow. Features reactive emerald ambient illumination when a history item matches the current text field state, alongside single-click cache eviction (`✕`).
@@ -29,6 +30,7 @@ A modern, fast, and lightweight web application for Planning Poker (Scrum Poker)
 - **CSS 3D Flip Animation Engine:** Implements smooth, hardware-accelerated 3D perspective transitions (`preserve-3d` and `rotateY`) that realistically flip player cards simultaneously during the reveal phase.
 - **Unanimous Celebration System:** Integrates a dynamic canvas confetti engine that automatically triggers a customized emerald-themed celebration the exact millisecond a 100% unanimous team vote is achieved.
 - **Smart Clipboard Invite Links:** Replaces raw static room hashes with an intelligent share button that dynamically captures the current environment origin (handling `localhost` vs production domains) and copies a full destination URL with temporal UI state feedback ("Link Copied!").
+- **Host Story Clipboard Extraction:** Enables session hosts to instantly extract clean story titles from the history logs into the clipboard via a space-optimized vertical action stack, accompanied by reactive, temporal checkmark micro-feedback (`✔️`).
 
 ## 🚀 Tech Stack
 
