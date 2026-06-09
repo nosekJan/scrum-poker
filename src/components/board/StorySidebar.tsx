@@ -8,6 +8,7 @@ export const StorySidebar: React.FC = () => {
   const [storyInput, setStoryInput] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("active");
   const [timerDisplay, setTimerDisplay] = useState("00:00");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const {
     activeStory,
@@ -43,6 +44,16 @@ export const StorySidebar: React.FC = () => {
       e.preventDefault();
       handleAddStory();
     }
+  };
+
+  const handleCopyStory = (title: string, id: string) => {
+    navigator.clipboard
+      .writeText(title)
+      .then(() => {
+        setCopiedId(id);
+        setTimeout(() => setCopiedId(null), 2000);
+      })
+      .catch((err) => console.error("Failed to copy text: ", err));
   };
 
   const handleDeleteStory = (id: string, title: string) => {
@@ -215,14 +226,56 @@ export const StorySidebar: React.FC = () => {
                       </span>
                     </div>
                     {isHost && (
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteStory(story.id, story.title)}
-                        className="text-neutral-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded transition-colors cursor-pointer opacity-0 group-hover:opacity-100 font-mono"
-                        title="Delete story from database"
-                      >
-                        ✕
-                      </button>
+                      <div className="flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 min-w-[20px]">
+                        <button
+                          type="button"
+                          onClick={() => handleCopyStory(story.title, story.id)}
+                          className={`p-1 rounded transition-colors cursor-pointer ${copiedId === story.id ? "text-emerald-400" : "text-emerald-500 hover:text-emerald-400"}`}
+                          title="Copy story title"
+                        >
+                          {copiedId === story.id ? (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              strokeWidth={2.5}
+                              stroke="currentColor"
+                              className="w-3.5 h-3.5"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M4.5 12.75l6 6 9-13.5"
+                              />
+                            </svg>
+                          ) : (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              strokeWidth={2}
+                              stroke="currentColor"
+                              className="w-3.5 h-3.5"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M16.5 8.25V6a2.25 2.25 0 00-2.25-2.25H4.5A2.25 2.25 0 002.25 6v10.5A2.25 2.25 0 004.5 18.75h2.25m7.5-10.5H19.5a2.25 2.25 0 012.25 2.25v10.5A2.25 2.25 0 0119.5 22.5h-10.5a2.25 2.25 0 01-2.25-2.25V10.5a2.25 2.25 0 012.25-2.25z"
+                              />
+                            </svg>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleDeleteStory(story.id, story.title)
+                          }
+                          className="text-neutral-500 hover:text-red-400 text-xs p-1 rounded transition-colors cursor-pointer font-mono leading-none flex items-center justify-center"
+                          title="Delete story from database"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -276,14 +329,54 @@ export const StorySidebar: React.FC = () => {
                     </span>
                   </div>
                   {isHost && (
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteStory(story.id, story.title)}
-                      className="text-neutral-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded transition-colors cursor-pointer opacity-0 group-hover:opacity-100 font-mono"
-                      title="Delete story from database"
-                    >
-                      ✕
-                    </button>
+                    <div className="flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 min-w-[20px]">
+                      <button
+                        type="button"
+                        onClick={() => handleCopyStory(story.title, story.id)}
+                        className={`p-1 rounded transition-colors cursor-pointer ${copiedId === story.id ? "text-emerald-400" : "text-emerald-500 hover:text-emerald-400"}`}
+                        title="Copy story title"
+                      >
+                        {copiedId === story.id ? (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={2.5}
+                            stroke="currentColor"
+                            className="w-3.5 h-3.5"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M4.5 12.75l6 6 9-13.5"
+                            />
+                          </svg>
+                        ) : (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={2}
+                            stroke="currentColor"
+                            className="w-3.5 h-3.5"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M16.5 8.25V6a2.25 2.25 0 00-2.25-2.25H4.5A2.25 2.25 0 002.25 6v10.5A2.25 2.25 0 004.5 18.75h2.25m7.5-10.5H19.5a2.25 2.25 0 012.25 2.25v10.5A2.25 2.25 0 0119.5 22.5h-10.5a2.25 2.25 0 01-2.25-2.25V10.5a2.25 2.25 0 012.25-2.25z"
+                            />
+                          </svg>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteStory(story.id, story.title)}
+                        className="text-neutral-500 hover:text-red-400 text-xs p-1 rounded transition-colors cursor-pointer font-mono leading-none flex items-center justify-center"
+                        title="Delete story from database"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
