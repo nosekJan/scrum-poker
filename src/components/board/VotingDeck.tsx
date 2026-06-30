@@ -5,7 +5,6 @@ import { myUserId } from "../../hooks/usePokerGame";
 import type { CardValue } from "../../types/poker";
 
 const CARDS: CardValue[] = [
-  "0",
   "0.5",
   "1",
   "2",
@@ -17,7 +16,6 @@ const CARDS: CardValue[] = [
   "40",
   "100",
   "?",
-  "☕",
 ];
 
 export const VotingDeck: React.FC = () => {
@@ -46,7 +44,7 @@ export const VotingDeck: React.FC = () => {
 
   if (isRevealed && !amIInThisRound) {
     return (
-      <div className="mt-auto max-w-3xl mx-auto pb-4">
+      <div className="w-full max-w-5xl mx-auto pb-4">
         <p className="text-center text-sm text-neutral-500 font-medium bg-neutral-900/50 py-3 px-6 rounded-lg border border-neutral-800">
           The round is currently being evaluated. Please wait for the next story
           to begin...
@@ -59,7 +57,7 @@ export const VotingDeck: React.FC = () => {
 
   return (
     <div
-      className={`mt-auto max-w-3xl mx-auto pb-4 transition-all duration-300 ${
+      className={`w-full max-w-5xl mx-auto pb-4 transition-all duration-300 ${
         isDisabled
           ? "opacity-30 pointer-events-none"
           : "opacity-100 pointer-events-auto"
@@ -72,7 +70,7 @@ export const VotingDeck: React.FC = () => {
             : "Voting will unlock once a story is set"
           : "Choose your estimate"}
       </p>
-      <div className="flex flex-wrap gap-2.5 justify-center">
+      <div className="flex flex-wrap lg:flex-nowrap gap-2 md:gap-3 justify-center lg:justify-between w-full py-1">
         {CARDS.map((value) => (
           <Card
             key={value}
