@@ -18,15 +18,15 @@ export const Board: React.FC<BoardProps> = ({
 }) => {
   return (
     <PokerProvider roomId={roomId} playerName={playerName} onLeave={onLeave}>
-      <div className="min-h-screen lg:h-full flex flex-col p-4 lg:py-3 lg:px-6 bg-neutral-950 text-white">
+      <div className="min-h-screen lg:h-screen flex flex-col p-4 lg:py-3 lg:px-6 bg-neutral-950 text-white">
         <BoardHeader
           roomId={roomId}
           playerName={playerName}
           onLeave={onLeave}
         />
 
-        <div className="flex-1 max-w-5xl mx-auto w-full grid grid-cols-1 lg:grid-cols-3 lg:grid-rows-[minmax(0,1fr)_auto] gap-y-6 lg:gap-y-0 lg:gap-x-8">
-          <div className="lg:col-span-2 lg:row-start-1 flex flex-col">
+        <div className="flex-1 max-w-5xl mx-auto w-full grid grid-cols-1 lg:grid-cols-3 lg:grid-rows-[minmax(0,1fr)_auto] gap-y-6 lg:gap-y-0 lg:gap-x-8 lg:h-[calc(100vh-140px)] lg:min-h-0">
+          <div className="lg:col-span-2 lg:row-start-1 flex flex-col lg:min-h-0">
             <PlayerDesk />
           </div>
 
@@ -34,7 +34,7 @@ export const Board: React.FC<BoardProps> = ({
             <VotingDeck />
           </div>
 
-          <div className="order-3 lg:order-none lg:col-span-1 lg:row-start-1 flex flex-col">
+          <div className="order-3 lg:order-none lg:col-span-1 lg:row-start-1 flex flex-col lg:min-h-0">
             <StorySidebar />
           </div>
         </div>
