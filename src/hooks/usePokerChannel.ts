@@ -44,6 +44,7 @@ export const usePokerChannel = ({
   const joinedAtRef = useRef(Date.now());
   const emojiSeedRef = useRef(Math.random());
   const exitedHostsRef = useRef<Record<string, number>>({});
+  const customHostIdRef = useRef<string | null>(null);
 
   const roomStateRef = useRef({ 
     isRevealed, 
@@ -51,7 +52,8 @@ export const usePokerChannel = ({
     activeStory, 
     completedStories, 
     storyStartTime,
-    players 
+    players,
+    customHostId: null as string | null
   });
   
   const hostIdRef = useRef<string | null>(null);
@@ -60,7 +62,15 @@ export const usePokerChannel = ({
   const playerNameRef = useRef(playerName);
 
   useEffect(() => {
-    roomStateRef.current = { isRevealed, votesSnapshot, activeStory, completedStories, storyStartTime, players };
+    roomStateRef.current = { 
+      isRevealed, 
+      votesSnapshot, 
+      activeStory, 
+      completedStories, 
+      storyStartTime, 
+      players,
+      customHostId: customHostIdRef.current
+    };
   }, [isRevealed, votesSnapshot, activeStory, completedStories, storyStartTime, players]);
 
   useEffect(() => {
@@ -138,7 +148,19 @@ export const usePokerChannel = ({
           }
         }
 
-        const finalHostId = currentHostId || firstAvailableId;
+        const isCustomHostPresent = customHostIdRef.current && 
+          state[customHostIdRef.current] && 
+          (!exitedHostsRef.current[customHostIdRef.current] || 
+           ((state[customHostIdRef.current] as any[])?.[0]?.joinedAt || 0) > exitedHostsRef.current[customHostIdRef.current]);
+
+        const finalHostId = isCustomHostPresent 
+          ? customHostIdRef.current 
+          : (currentHostId || firstAvailableId);
+
+        if (!isCustomHostPresent) {
+          customHostIdRef.current = null;
+        }
+
         setHostId(finalHostId);
         hostIdRef.current = finalHostId;
 
@@ -203,6 +225,11 @@ export const usePokerChannel = ({
         const { userId, timestamp } = payload.payload;
         exitedHostsRef.current[userId] = timestamp;
         setPlayers((prev) => prev.filter((p) => p.id !== userId));
+        
+        if (customHostIdRef.current === userId) {
+          customHostIdRef.current = null;
+        }
+
         setHostId((current) => {
           if (current === userId) {
             const remaining = playersRef.current.filter((p) => p.id !== userId);
@@ -225,7 +252,7 @@ export const usePokerChannel = ({
         if (hostIdRef.current === myUserId) {
           roomChannel.send({
             type: "broadcast",
-            event: "request_sync",
+            event: "sync_response",
             payload: roomStateRef.current,
           });
         }
@@ -239,11 +266,31 @@ export const usePokerChannel = ({
         setStoryStartTime(payload.payload.storyStartTime);
         roomStateRef.current.storyStartTime = payload.payload.storyStartTime;
         
+        if (payload.payload.customHostId) {
+          customHostIdRef.current = payload.payload.customHostId;
+          setHostId(payload.payload.customHostId);
+          hostIdRef.current = payload.payload.customHostId;
+        }
+
         if (payload.payload.players) {
           setPlayers((prev) => prev.map((p) => {
             const syncedPlayer = payload.payload.players.find((sp: Player) => sp.id === p.id);
             return syncedPlayer ? { ...p, selectedCard: syncedPlayer.selectedCard } : p;
           }));
+        }
+      })
+      .on("broadcast", { event: "promote_host" }, (payload) => {
+        const { hostId: nextHostId } = payload.payload;
+        customHostIdRef.current = nextHostId;
+        setHostId(nextHostId);
+        hostIdRef.current = nextHostId;
+      })
+      .on("broadcast", { event: "kick_player" }, (payload) => {
+        const { playerId } = payload.payload;
+        if (playerId === myUserId) {
+          onLeaveRef.current();
+        } else {
+          setPlayers((prev) => prev.filter((p) => p.id !== playerId));
         }
       })
       .subscribe((status: string) => {

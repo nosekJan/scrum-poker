@@ -134,7 +134,7 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     }
   };
 
-const endSession = async () => {
+  const endSession = async () => {
     if (channelRef.current) {
       await channelRef.current.send({
         type: "broadcast",
@@ -144,6 +144,28 @@ const endSession = async () => {
     }
     onLeave();
   };
+
+  const promotePlayer = useCallback(async (playerId: string) => {
+    setHostId(playerId);
+    if (channelRef.current) {
+      await channelRef.current.send({
+        type: "broadcast",
+        event: "promote_host",
+        payload: { hostId: playerId },
+      });
+    }
+  }, [channelRef]);
+
+  const kickPlayer = useCallback(async (playerId: string) => {
+    setPlayers((prev) => prev.filter((p) => p.id !== playerId));
+    if (channelRef.current) {
+      await channelRef.current.send({
+        type: "broadcast",
+        event: "kick_player",
+        payload: { playerId },
+      });
+    }
+  }, [channelRef]);
 
   useEffect(() => {
     if (hostId === myUserId && !isRevealed && players.length > 0) {
@@ -169,5 +191,7 @@ const endSession = async () => {
     deleteStory,
     hostId,
     endSession,
+    kickPlayer,
+    promotePlayer,
   };
 };

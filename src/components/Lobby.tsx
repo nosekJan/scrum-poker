@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Changelog } from "./Changelog";
 
 interface LobbyProps {
   onJoin: (name: string, roomId: string, isCreating: boolean) => void;
@@ -264,6 +265,9 @@ export const Lobby: React.FC<LobbyProps> = ({
             </div>
           </div>
         )}
+      </div>
+      <div>
+        <Changelog />
       </div>
     </div>
   );
