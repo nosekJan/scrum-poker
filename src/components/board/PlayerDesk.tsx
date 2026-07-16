@@ -64,6 +64,8 @@ export const PlayerDesk: React.FC = () => {
     triggerRevote,
     hostId,
     activeStory,
+    kickPlayer,
+    promotePlayer,
   } = usePoker();
 
   const isHost = myUserId === hostId;
@@ -156,6 +158,14 @@ export const PlayerDesk: React.FC = () => {
       setTiePreference("higher");
     }
   }, [isRevealed]);
+
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleGlobalClick = () => setActiveMenuId(null);
+    window.addEventListener("click", handleGlobalClick);
+    return () => window.removeEventListener("click", handleGlobalClick);
+  }, []);
 
   const tieInfo = useMemo(() => {
     if (voteStats.length === 0)
@@ -373,7 +383,7 @@ export const PlayerDesk: React.FC = () => {
           return (
             <div
               key={player.id}
-              className={`flex flex-col items-center transition-all duration-300 text-center ${
+              className={`flex flex-col items-center transition-all duration-300 text-center group relative ${
                 isCrowded ? "w-[64px] gap-1" : "w-[90px] gap-2"
               } ${isOffline ? "opacity-40 scale-95" : "opacity-100 scale-100"}`}
             >
@@ -425,6 +435,80 @@ export const PlayerDesk: React.FC = () => {
                     )}
                   </div>
                 </div>
+
+                {isHost &&
+                  player.id !== myUserId &&
+                  !player.id.startsWith("mock-") && (
+                    <div
+                      className="absolute top-0 right-0 z-30 flex items-center justify-center"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveMenuId(
+                            activeMenuId === player.id ? null : player.id,
+                          )
+                        }
+                        className={`flex items-center justify-center text-neutral-500 hover:text-neutral-200 transition-colors cursor-pointer focus:outline-none active:scale-95
+        ${isCrowded ? "w-6 h-6" : "w-7 h-7"}
+      `}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={2.8}
+                          stroke="currentColor"
+                          className={isCrowded ? "w-3.5 h-3.5" : "w-4 h-4"}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z"
+                          />
+                        </svg>
+                      </button>
+
+                      {activeMenuId === player.id && (
+                        <div className="absolute right-full top-0.5 mr-1 flex flex-col bg-neutral-950/95 backdrop-blur-sm border border-neutral-800 rounded-lg shadow-2xl py-1 z-40 animate-fadeIn min-w-[105px]">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              promotePlayer(player.id);
+                              setActiveMenuId(null);
+                            }}
+                            className="w-full px-3 py-1.5 text-[11px] text-amber-400 hover:bg-neutral-900 transition-colors flex items-center justify-start gap-2 font-bold cursor-pointer rounded-t whitespace-nowrap"
+                          >
+                            <span className="inline-block -translate-y-[0.5px]">
+                              👑
+                            </span>{" "}
+                            Promote
+                          </button>
+                          <div className="h-[1px] w-full bg-neutral-800/80 flex-shrink-0" />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  `Are you sure you want to kick ${player.name}?`,
+                                )
+                              ) {
+                                kickPlayer(player.id);
+                              }
+                              setActiveMenuId(null);
+                            }}
+                            className="w-full px-3 py-1.5 text-[11px] text-red-500 hover:bg-neutral-900 transition-colors flex items-center justify-start gap-2 font-bold cursor-pointer rounded-b whitespace-nowrap"
+                          >
+                            <span className="inline-block -translate-y-[0.5px]">
+                              🚫
+                            </span>{" "}
+                            Kick
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                 {player.id === hostId && (
                   <span
