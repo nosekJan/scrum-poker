@@ -17,6 +17,8 @@ interface PokerContextType {
   deleteStory: (storyId: string) => Promise<void>;
   hostId: string | null;
   endSession: () => void;
+  kickPlayer: (playerId: string) => Promise<void>;
+  promotePlayer: (playerId: string) => Promise<void>;
 }
 
 const PokerContext = createContext<PokerContextType | undefined>(undefined);

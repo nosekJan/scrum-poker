@@ -4,6 +4,8 @@ A modern, fast, and lightweight web application for Planning Poker (Scrum Poker)
 
 ## ✨ Features Built So Far
 
+- **In-App Changelog (What's New):** Integrates an isolated, lightweight versioning widget in the Lobby screen that opens a beautiful timeline modal displaying the application's release history. Uses browser local storage to track read states and signals unread updates using an ambient pulsing emerald indicator.
+- **Advanced Host Moderation (Kick & Promote):** Empowers room hosts with direct moderation tools to instantly eject players (Kick) or reassign host privileges (Promote) directly from the player grid, synchronized instantly across all clients via Supabase Broadcast.
 - **Hybrid Real-time Architecture:** Separates Supabase Presence (strictly for connection status and player tracking) from Broadcast channels (for card casting, reveals, and story state propagation). This optimized dual-channel system completely eliminates WebSocket data bloat and rate-limiting disconnects (`Status: CLOSED`).
 - **Dynamic Mobile-First Layout:** Responsive Grid (Tailwind CSS) that dynamically rearranges the UI based on viewport size. On mobile/tablets, the voting deck shifts directly beneath the player desk to eliminate scrolling, while expanding into a multi-column side-by-side dashboard on desktop viewports.
 - **Smart Host Tie-Break Engine:** Instantly evaluates split decisions when multiple cards match the highest pick count, using a mathematical average anchor to provide hosts with precise Higher vs. Lower override parameters.
