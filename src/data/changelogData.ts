@@ -11,6 +11,17 @@ export interface ChangelogItem {
 export const CURRENT_VERSION = "1.4.1";
 
 export const CHANGELOG: ChangelogItem[] = [
+    {
+   version: "1.5.0",
+    date: "July 16, 2026",
+    title: "Host Controls, Changelog & State Sync",
+    changes: [
+      { type: "feature", text: "Added advanced host tools to kick players from the room and promote others to host." },
+      { type: "feature", text: "Implemented 'What's New' changelog modal to seamlessly display release history." },
+      { type: "feature", text: "Added a discrete floating version widget to the Lobby screen with unread update indicators." },
+      { type: "improvement", text: "Refactored poker context and real-time hooks for optimized state synchronization." }
+    ]
+  },
   {
     version: "1.4.1",
     date: "June 9, 2026",
