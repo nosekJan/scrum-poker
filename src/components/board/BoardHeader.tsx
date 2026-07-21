@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { usePoker } from "../../context/PokerContext";
+import { usePoker } from "../../hooks/usePoker";
 import { myUserId } from "../../hooks/usePokerGame";
 
 interface BoardHeaderProps {

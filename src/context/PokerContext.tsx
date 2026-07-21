@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef } from "react";
+import React, { createContext, useEffect, useRef } from "react";
 import { usePokerGame } from "../hooks/usePokerGame";
 import type { Player, CardValue, Story } from "../types/poker";
 
@@ -21,7 +21,9 @@ interface PokerContextType {
   promotePlayer: (playerId: string) => Promise<void>;
 }
 
-const PokerContext = createContext<PokerContextType | undefined>(undefined);
+export const PokerContext = createContext<PokerContextType | undefined>(
+  undefined,
+);
 
 export const PokerProvider: React.FC<{
   roomId: string;
@@ -71,12 +73,4 @@ export const PokerProvider: React.FC<{
   return (
     <PokerContext.Provider value={poker}>{children}</PokerContext.Provider>
   );
-};
-
-export const usePoker = () => {
-  const context = useContext(PokerContext);
-  if (!context) {
-    throw new Error("usePoker must be used within a PokerProvider");
-  }
-  return context;
 };
