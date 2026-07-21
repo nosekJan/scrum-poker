@@ -177,7 +177,7 @@ export const BugReportWidget: React.FC = () => {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-5 right-5 z-40 flex items-center gap-2 px-3 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 rounded-full shadow-lg border border-zinc-800 transition-all duration-200"
+        className="fixed bottom-5 right-5 z-40 flex items-center gap-2 px-3 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 rounded-full shadow-lg border border-zinc-800 transition-all duration-200 cursor-pointer"
         title="Report Bug"
       >
         <Bug className="w-5 h-5 text-red-400" />
@@ -196,7 +196,7 @@ export const BugReportWidget: React.FC = () => {
               </h3>
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-zinc-500 hover:text-zinc-300 transition-colors p-1 rounded-md hover:bg-zinc-800"
+                className="text-zinc-500 hover:text-zinc-300 transition-colors p-1 rounded-md hover:bg-zinc-800 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -260,7 +260,7 @@ export const BugReportWidget: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleRemoveScreenshot}
-                        className="text-zinc-500 hover:text-red-400 transition-colors p-1"
+                        className="text-zinc-500 hover:text-red-400 transition-colors p-1 cursor-pointer"
                         title="Remove image"
                       >
                         <Trash2 className="w-5 h-5" />
@@ -294,7 +294,7 @@ export const BugReportWidget: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsOpen(false)}
-                    className="px-4 py-2.5 text-sm font-medium text-zinc-400 hover:text-zinc-100 transition-colors"
+                    className="px-4 py-2.5 text-sm font-medium text-zinc-400 hover:text-zinc-100 transition-colors cursor-pointer"
                   >
                     Cancel
                   </button>
