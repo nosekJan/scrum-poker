@@ -48,7 +48,7 @@ export const BugReportWidget: React.FC = () => {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      setErrorMsg("Obrázok je príliš veľký (max 5 MB).");
+      setErrorMsg("Image is too large (max 5 MB).");
       return;
     }
 
@@ -73,8 +73,8 @@ export const BugReportWidget: React.FC = () => {
     const webhookUrl = import.meta.env.VITE_DISCORD_WEBHOOK_URL;
 
     if (!webhookUrl) {
-      console.error("VITE_DISCORD_WEBHOOK_URL chýba v .env súbore");
-      setErrorMsg("Chyba v konfigurácii webhooku.");
+      console.error("VITE_DISCORD_WEBHOOK_URL is missing in the .env file");
+      setErrorMsg("Webhook configuration error.");
       setIsSubmitting(false);
       return;
     }
@@ -152,7 +152,7 @@ export const BugReportWidget: React.FC = () => {
       }
 
       if (!response.ok) {
-        throw new Error("Zlyhalo odosielanie na Discord.");
+        throw new Error("Failed to send to Discord.");
       }
 
       setIsSuccess(true);
@@ -167,7 +167,7 @@ export const BugReportWidget: React.FC = () => {
       }, 1500);
     } catch (err) {
       console.error("Bug report submit error:", err);
-      setErrorMsg("Nepodarilo sa odoslať správu. Skús to znova.");
+      setErrorMsg("Failed to send the message. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -303,7 +303,7 @@ export const BugReportWidget: React.FC = () => {
                     disabled={
                       isSubmitting || cooldown > 0 || !description.trim()
                     }
-                    className="flex items-center gap-2 px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20 disabled:shadow-none"
+                    className="flex items-center gap-2 px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 disabled:bg-neutral-800 disabled:text-neutral-600 disabled:cursor-not-allowed cursor-pointer text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20 disabled:shadow-none"
                   >
                     {isSubmitting ? (
                       <>
