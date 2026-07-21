@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { usePoker } from "../../context/PokerContext";
+import { usePoker } from "../../hooks/usePoker";
 import { myUserId } from "../../hooks/usePokerGame";
+import type { Player } from "../../types/poker";
 
 const PLAYER_EMOJIS = [
   "🦊",
@@ -68,11 +69,40 @@ export const PlayerDesk: React.FC = () => {
     promotePlayer,
   } = usePoker();
 
+  const [seenDuringReveal, setSeenDuringReveal] = useState<Player[]>([]);
+
+  useEffect(() => {
+    if (isRevealed) {
+      setSeenDuringReveal((prev) => {
+        const newPlayers = players.filter(
+          (p) => !prev.some((existing) => existing.id === p.id),
+        );
+        if (newPlayers.length > 0) {
+          return [...prev, ...newPlayers];
+        }
+        return prev;
+      });
+    } else {
+      setSeenDuringReveal([]);
+    }
+  }, [isRevealed, players]);
+
   const isHost = myUserId === hostId;
 
   const displayedPlayers = useMemo(() => {
-    return isRevealed && votesSnapshot ? votesSnapshot : players;
-  }, [isRevealed, votesSnapshot, players]);
+    if (isRevealed && votesSnapshot) {
+      const base = [...votesSnapshot];
+
+      seenDuringReveal.forEach((seenPlayer) => {
+        if (!base.some((b) => b.id === seenPlayer.id)) {
+          const activeMatch = players.find((p) => p.id === seenPlayer.id);
+          base.push(activeMatch || seenPlayer);
+        }
+      });
+      return base;
+    }
+    return players;
+  }, [isRevealed, votesSnapshot, players, seenDuringReveal]);
 
   const isCrowded = displayedPlayers.length > 10;
 
@@ -377,15 +407,24 @@ export const PlayerDesk: React.FC = () => {
         }`}
       >
         {displayedPlayers.map((player) => {
-          const isOffline =
-            isRevealed && !players.some((p) => p.id === player.id);
+          const isVoter =
+            isRevealed && votesSnapshot
+              ? votesSnapshot.some((v) => v.id === player.id)
+              : true;
+          const isActive = players.some((p) => p.id === player.id);
+
+          const isOffline = isRevealed && !isActive;
+
+          const isLateJoin = isRevealed && !isVoter && isActive;
+
+          const isFaded = isOffline || isLateJoin;
 
           return (
             <div
               key={player.id}
               className={`flex flex-col items-center transition-all duration-300 text-center group relative ${
                 isCrowded ? "w-[64px] gap-1" : "w-[90px] gap-2"
-              } ${isOffline ? "opacity-40 scale-95" : "opacity-100 scale-100"}`}
+              } ${isFaded ? "opacity-40 scale-95" : "opacity-100 scale-100"}`}
             >
               <div
                 className={`transition-all duration-300 relative [perspective:1000px] ${
@@ -450,9 +489,9 @@ export const PlayerDesk: React.FC = () => {
                             activeMenuId === player.id ? null : player.id,
                           )
                         }
-                        className={`flex items-center justify-center text-neutral-500 hover:text-neutral-200 transition-colors cursor-pointer focus:outline-none active:scale-95
-        ${isCrowded ? "w-6 h-6" : "w-7 h-7"}
-      `}
+                        className={`flex items-center justify-center text-neutral-500 hover:text-neutral-200 transition-colors cursor-pointer focus:outline-none active:scale-95 ${
+                          isCrowded ? "w-6 h-6" : "w-7 h-7"
+                        }`}
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -533,6 +572,11 @@ export const PlayerDesk: React.FC = () => {
                 {isOffline && (
                   <span className="text-[9px] text-neutral-500 font-semibold uppercase tracking-wider bg-neutral-900 px-1 rounded border border-neutral-800">
                     Offline
+                  </span>
+                )}
+                {isLateJoin && (
+                  <span className="text-[9px] text-sky-400 font-semibold uppercase tracking-wider bg-neutral-900 px-1 rounded border border-sky-900/50">
+                    Joined
                   </span>
                 )}
               </span>

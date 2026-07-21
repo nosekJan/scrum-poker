@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { usePoker } from "../../context/PokerContext";
+import { usePoker } from "../../hooks/usePoker";
 import { myUserId, formatTime } from "../../hooks/usePokerGame";
 
 type Tab = "active" | "completed" | "all";

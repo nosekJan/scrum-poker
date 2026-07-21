@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Card } from "../Card";
-import { usePoker } from "../../context/PokerContext";
+import { usePoker } from "../../hooks/usePoker";
 import { myUserId } from "../../hooks/usePokerGame";
+import { useCurrentPlayer } from "../../hooks/useCurrentPlayer";
 import type { CardValue } from "../../types/poker";
 
 const CARDS: CardValue[] = [
@@ -19,22 +20,16 @@ const CARDS: CardValue[] = [
 ];
 
 export const VotingDeck: React.FC = () => {
-  const [selectedCard, setSelectedCard] = useState<CardValue | null>(null);
   const { isRevealed, activeStory, castVote, votesSnapshot, hostId } =
     usePoker();
+  const myPlayer = useCurrentPlayer();
 
   const isHost = myUserId === hostId;
-
-  useEffect(() => {
-    if (!isRevealed) {
-      setSelectedCard(null);
-    }
-  }, [isRevealed]);
+  const selectedCard = myPlayer?.selectedCard ?? null;
 
   const handleCardClick = (value: CardValue) => {
     if (isRevealed) return;
     const newValue = selectedCard === value ? null : value;
-    setSelectedCard(newValue);
     castVote(newValue);
   };
 
