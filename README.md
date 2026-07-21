@@ -4,6 +4,7 @@ A modern, fast, and lightweight web application for Planning Poker (Scrum Poker)
 
 ## ✨ Features Built So Far
 
+- **In-App Bug Reporting & Discord Integration:** Includes a floating action widget allowing users to report issues directly to the development team via Discord webhooks. Features automatic context capture (Room ID, player state), drag-and-drop screenshot uploads (up to 5MB), and a built-in 60-second cooldown rate limiter to prevent spam, all wrapped in the modern Zinc/Emerald dark UI.
 - **Seamless Late Joiner Engine:** Empowers participants to jump directly into an active room and cast votes mid-session. Includes strict UI buffer states ("JOINED" and "OFFLINE") that accurately track edge-case users who connect or drop out exclusively during the reveal phase, completely eliminating ghost players from the board.
 - **In-App Changelog (What's New):** Integrates an isolated, lightweight versioning widget in the Lobby screen that opens a beautiful timeline modal displaying the application's release history. Uses browser local storage to track read states and signals unread updates using an ambient pulsing emerald indicator.
 - **Advanced Host Moderation (Kick & Promote):** Empowers room hosts with direct moderation tools to instantly eject players (Kick) or reassign host privileges (Promote) directly from the player grid, synchronized instantly across all clients via Supabase Broadcast.
@@ -51,4 +52,12 @@ git clone <your-repo-url>
 cd scrum-poker
 npm install
 npm run dev
+```
+
+### 2. Environment Configuration
+
+To enable the in-app Bug Report widget, create a `.env` file in the root directory and add your Discord webhook URL:
+
+```env
+VITE_DISCORD_WEBHOOK_URL="[https://discord.com/api/webhooks/your_webhook_id/your_webhook_token](https://discord.com/api/webhooks/your_webhook_id/your_webhook_token)"
 ```
