@@ -8,9 +8,18 @@ export interface ChangelogItem {
   }[];
 }
 
-export const CURRENT_VERSION = "1.5.1";
+export const CURRENT_VERSION = "1.5.2";
 
 export const CHANGELOG: ChangelogItem[] = [
+  {
+    version: "1.5.2",
+    date: "July 21, 2026",
+    title: "In-App Bug Reporting & UI Enhancements",
+    changes: [
+      { type: "feature", text: "Implemented a floating Bug Report widget with Discord webhook integration and screenshot upload support." },
+      { type: "improvement", text: "Updated PokerContext to expose roomId." }
+    ]
+  },
   {
     version: "1.5.1",
     date: "July 21, 2026",

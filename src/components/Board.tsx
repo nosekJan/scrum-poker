@@ -4,6 +4,7 @@ import { BoardHeader } from "./board/BoardHeader";
 import { PlayerDesk } from "./board/PlayerDesk";
 import { StorySidebar } from "./board/StorySidebar";
 import { VotingDeck } from "./board/VotingDeck";
+import { BugReportWidget } from "./BugReportWidget";
 
 interface BoardProps {
   roomId: string;
@@ -24,7 +25,6 @@ export const Board: React.FC<BoardProps> = ({
           playerName={playerName}
           onLeave={onLeave}
         />
-
         <div className="flex-1 max-w-5xl mx-auto w-full grid grid-cols-1 lg:grid-cols-3 lg:grid-rows-[minmax(0,1fr)_auto] gap-y-6 lg:gap-y-0 lg:gap-x-8 lg:h-[calc(100vh-140px)] lg:min-h-0">
           <div className="lg:col-span-2 lg:row-start-1 flex flex-col lg:min-h-0">
             <PlayerDesk />
@@ -38,6 +38,7 @@ export const Board: React.FC<BoardProps> = ({
             <StorySidebar />
           </div>
         </div>
+        <BugReportWidget />
       </div>
     </PokerProvider>
   );

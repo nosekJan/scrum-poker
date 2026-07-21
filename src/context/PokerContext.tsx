@@ -3,6 +3,7 @@ import { usePokerGame } from "../hooks/usePokerGame";
 import type { Player, CardValue, Story } from "../types/poker";
 
 interface PokerContextType {
+  roomId: string;
   players: Player[];
   votesSnapshot: Player[] | null;
   castVote: (card: CardValue | null) => void;
@@ -71,6 +72,8 @@ export const PokerProvider: React.FC<{
   }, [poker.isRevealed, poker.players]);
 
   return (
-    <PokerContext.Provider value={poker}>{children}</PokerContext.Provider>
+    <PokerContext.Provider value={{ ...poker, roomId }}>
+      {children}
+    </PokerContext.Provider>
   );
 };
