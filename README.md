@@ -4,6 +4,7 @@ A modern, fast, and lightweight web application for Planning Poker (Scrum Poker)
 
 ## ✨ Features Built So Far
 
+- **Seamless Late Joiner Engine:** Empowers participants to jump directly into an active room and cast votes mid-session. Includes strict UI buffer states ("JOINED" and "OFFLINE") that accurately track edge-case users who connect or drop out exclusively during the reveal phase, completely eliminating ghost players from the board.
 - **In-App Changelog (What's New):** Integrates an isolated, lightweight versioning widget in the Lobby screen that opens a beautiful timeline modal displaying the application's release history. Uses browser local storage to track read states and signals unread updates using an ambient pulsing emerald indicator.
 - **Advanced Host Moderation (Kick & Promote):** Empowers room hosts with direct moderation tools to instantly eject players (Kick) or reassign host privileges (Promote) directly from the player grid, synchronized instantly across all clients via Supabase Broadcast.
 - **Hybrid Real-time Architecture:** Separates Supabase Presence (strictly for connection status and player tracking) from Broadcast channels (for card casting, reveals, and story state propagation). This optimized dual-channel system completely eliminates WebSocket data bloat and rate-limiting disconnects (`Status: CLOSED`).

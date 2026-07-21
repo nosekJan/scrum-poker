@@ -8,9 +8,20 @@ export interface ChangelogItem {
   }[];
 }
 
-export const CURRENT_VERSION = "1.5.0";
+export const CURRENT_VERSION = "1.5.1";
 
 export const CHANGELOG: ChangelogItem[] = [
+  {
+    version: "1.5.1",
+    date: "July 21, 2026",
+    title: "Late Joiners & Architecture Refactor",
+    changes: [
+      { type: "feature", text: "Allowed players to seamlessly cast votes when joining an active voting phase." },
+      { type: "feature", text: "Added specific 'JOINED' and 'OFFLINE' UI status tracking for players connecting or disconnecting during the reveal phase." },
+      { type: "improvement", text: "Extracted useCurrentPlayer hook for centralized and more reliable player state management." },
+      { type: "improvement", text: "Refactored usePokerChannel with named event handlers for better readability and performance." }
+    ]
+  },
     {
    version: "1.5.0",
     date: "July 16, 2026",
