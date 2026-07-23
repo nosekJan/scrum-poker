@@ -182,7 +182,7 @@ export const BugReportWidget: React.FC = () => {
       >
         <Bug className="w-5 h-5 text-red-400" />
         <span className="text-xs font-bold uppercase tracking-wide pr-1 hidden sm:inline">
-          Bug Report
+          Report
         </span>
       </button>
 
@@ -192,7 +192,7 @@ export const BugReportWidget: React.FC = () => {
             <div className="flex items-center justify-between p-5 border-b border-zinc-800/50">
               <h3 className="text-xl font-bold text-zinc-100 flex items-center gap-3">
                 <Bug className="w-6 h-6 text-red-400" />
-                Report a Bug
+                Found a feature?
               </h3>
               <button
                 onClick={() => setIsOpen(false)}
@@ -216,21 +216,21 @@ export const BugReportWidget: React.FC = () => {
               <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-5">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-zinc-400 uppercase tracking-wide">
-                    Issue Description <span className="text-red-400">*</span>
+                    What Happened? <span className="text-red-400">*</span>
                   </label>
                   <textarea
                     required
                     rows={4}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Describe what is not working or what error occurred..."
+                    placeholder="Describe what broke... or what works suspiciously well."
                     className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all resize-none"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-zinc-400 uppercase tracking-wide">
-                    Your Email{" "}
+                    Feature Hunter Email{" "}
                     <span className="lowercase font-normal tracking-normal text-zinc-500">
                       (optional)
                     </span>
@@ -239,14 +239,14 @@ export const BugReportWidget: React.FC = () => {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@company.com"
+                    placeholder="feature.hunter@company.com"
                     className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-zinc-400 uppercase tracking-wide">
-                    Attach Screenshot{" "}
+                    Proof Of Feature{" "}
                     <span className="lowercase font-normal tracking-normal text-zinc-500">
                       (max 5MB)
                     </span>
@@ -270,7 +270,7 @@ export const BugReportWidget: React.FC = () => {
                     <label className="w-full border-2 border-dashed border-zinc-800 rounded-xl p-4 flex flex-col items-center justify-center gap-2 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600 hover:bg-zinc-800/30 transition-all cursor-pointer group">
                       <Upload className="w-5 h-5 group-hover:-translate-y-1 transition-transform" />
                       <span className="text-sm font-medium">
-                        Select image...
+                        Drop evidence here...
                       </span>
                       <input
                         ref={fileInputRef}
@@ -313,7 +313,7 @@ export const BugReportWidget: React.FC = () => {
                     ) : cooldown > 0 ? (
                       `Wait (${cooldown}s)`
                     ) : (
-                      "Submit Report"
+                      "Expose Feature"
                     )}
                   </button>
                 </div>
