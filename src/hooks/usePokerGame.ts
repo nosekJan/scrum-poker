@@ -23,7 +23,7 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     deleteStoryFromDB
   } = usePokerStories(roomId);
 
-  const { channelRef, roomStateRef, leaveRoom } = usePokerChannel({
+  const { channelRef, roomStateRef, leaveRoom, isKicked, kickPlayer } = usePokerChannel({
     roomId,
     playerName,
     onLeave,
@@ -44,7 +44,8 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
 
   const exitRoom = useCallback(async () => {
     await leaveRoom();
-  }, [leaveRoom]);
+    onLeave();
+  }, [leaveRoom, onLeave]);
 
   const toggleReveal = useCallback(async (reveal: boolean) => {
     setIsRevealed(reveal);
@@ -160,17 +161,6 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     }
   }, [channelRef]);
 
-  const kickPlayer = useCallback(async (playerId: string) => {
-    setPlayers((prev) => prev.filter((p) => p.id !== playerId));
-    if (channelRef.current) {
-      await channelRef.current.send({
-        type: "broadcast",
-        event: "kick_player",
-        payload: { playerId },
-      });
-    }
-  }, [channelRef]);
-
   useEffect(() => {
     if (hostId === myUserId && !isRevealed && players.length > 0) {
       const allVoted = players.every((p) => p.selectedCard !== null);
@@ -198,5 +188,6 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     kickPlayer,
     promotePlayer,
     leaveRoom: exitRoom,
+    isKicked,
   };
 };

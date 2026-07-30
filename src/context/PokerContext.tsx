@@ -33,6 +33,7 @@ interface PokerContextType {
   promotePlayer: (playerId: string) => Promise<void>;
   leaveRoom: () => Promise<void>;
   notifications: RoomNotification[];
+  isKicked: boolean;
 }
 
 export const PokerContext = createContext<PokerContextType | undefined>(

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { myUserId } from "../utils/poker";
 import type { Player, Story } from "../types/poker";
@@ -60,6 +60,8 @@ export const usePokerChannel = ({
   const playersRef = useRef<Player[]>([]);
   const onLeaveRef = useRef(onLeave);
   const playerNameRef = useRef(playerName);
+
+  const [isKicked, setIsKicked] = useState<boolean>(false);
 
   useEffect(() => {
     roomStateRef.current = {
@@ -321,10 +323,14 @@ export const usePokerChannel = ({
       hostIdRef.current = nextHostId;
     };
 
-    const handleKickPlayer = (payload: any) => {
+   const handleKickPlayer = (payload: any) => {
       const { playerId } = payload.payload;
+      exitedHostsRef.current[playerId] = Date.now();
       if (playerId === myUserId) {
-        onLeaveRef.current();
+        setIsKicked(true);
+        if (channelRef.current) {
+          channelRef.current.untrack().catch(() => {});
+        }
       } else {
         setPlayers((prev) => prev.filter((p) => p.id !== playerId));
       }
@@ -362,5 +368,17 @@ export const usePokerChannel = ({
     };
   }, [roomId, updatePresence, broadcastLeave]);
 
-  return { channelRef, updatePresence, roomStateRef, leaveRoom };
+  const kickPlayer = useCallback(async (playerId: string) => {
+    exitedHostsRef.current[playerId] = Date.now();
+    setPlayers((prev) => prev.filter((p) => p.id !== playerId));
+    if (channelRef.current) {
+      await channelRef.current.send({
+        type: "broadcast",
+        event: "kick_player",
+        payload: { playerId },
+      });
+    }
+  }, [setPlayers]);
+
+  return { channelRef, updatePresence, roomStateRef, leaveRoom, isKicked, kickPlayer };
 };
