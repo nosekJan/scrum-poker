@@ -4,6 +4,7 @@ import React, {
   useRef,
   useState,
   useCallback,
+  useMemo,
 } from "react";
 import { usePokerGame } from "../hooks/usePokerGame";
 import type { Player, CardValue, Story } from "../types/poker";
@@ -30,6 +31,7 @@ interface PokerContextType {
   endSession: () => void;
   kickPlayer: (playerId: string) => Promise<void>;
   promotePlayer: (playerId: string) => Promise<void>;
+  leaveRoom: () => Promise<void>;
   notifications: RoomNotification[];
 }
 
@@ -129,8 +131,17 @@ export const PokerProvider: React.FC<{
     }
   }, [poker.isRevealed, poker.players]);
 
+  const contextValue = useMemo(
+    () => ({
+      ...poker,
+      roomId,
+      notifications,
+    }),
+    [poker, roomId, notifications],
+  );
+
   return (
-    <PokerContext.Provider value={{ ...poker, roomId, notifications }}>
+    <PokerContext.Provider value={contextValue}>
       {children}
     </PokerContext.Provider>
   );

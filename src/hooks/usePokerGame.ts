@@ -23,7 +23,7 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     deleteStoryFromDB
   } = usePokerStories(roomId);
 
-  const { channelRef, roomStateRef } = usePokerChannel({
+  const { channelRef, roomStateRef, leaveRoom } = usePokerChannel({
     roomId,
     playerName,
     onLeave,
@@ -41,6 +41,10 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     storyStartTime,
     setStoryStartTime,
   });
+
+  const exitRoom = useCallback(async () => {
+    await leaveRoom();
+  }, [leaveRoom]);
 
   const toggleReveal = useCallback(async (reveal: boolean) => {
     setIsRevealed(reveal);
@@ -193,5 +197,6 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     endSession,
     kickPlayer,
     promotePlayer,
+    leaveRoom: exitRoom,
   };
 };

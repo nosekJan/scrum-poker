@@ -13,10 +13,14 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
   playerName,
   onLeave,
 }) => {
-  const { hostId, endSession } = usePoker();
+  const { hostId, endSession, leaveRoom } = usePoker();
   const isHost = myUserId === hostId;
   const [copied, setCopied] = useState(false);
 
+  const handleLeave = async () => {
+    await leaveRoom();
+    onLeave();
+  };
   const handleCopyInvite = async () => {
     try {
       const inviteUrl = `${window.location.origin}/?room=${roomId}`;
@@ -79,7 +83,7 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
           </button>
         )}
         <button
-          onClick={onLeave}
+          onClick={handleLeave}
           className="px-3 py-1.5 border border-neutral-700 rounded-lg text-xs hover:bg-neutral-800 transition-colors cursor-pointer"
         >
           Leave

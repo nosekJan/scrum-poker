@@ -82,8 +82,10 @@ export const usePokerChannel = ({
     playerNameRef.current = playerName;
   }, [onLeave, playerName]);
 
-  const updatePresence = useCallback(() => {
+ const updatePresence = useCallback(() => {
     if (!channelRef.current) return;
+    delete exitedHostsRef.current[myUserId];
+    joinedAtRef.current = Date.now();
     channelRef.current.track({
       name: playerNameRef.current,
       joinedAt: joinedAtRef.current,
@@ -92,14 +94,29 @@ export const usePokerChannel = ({
   }, []);
 
   const broadcastLeave = useCallback(() => {
-    if (channelRef.current && hostIdRef.current === myUserId) {
+    if (channelRef.current) {
       channelRef.current.send({
         type: "broadcast",
-        event: "host_leaving",
+        event: "player_leaving",
         payload: { userId: myUserId, timestamp: Date.now() },
       });
     }
   }, []);
+
+  const leaveRoom = useCallback(async () => {
+    broadcastLeave();
+    if (channelRef.current) {
+      try {
+        await channelRef.current.untrack();
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        await supabase.removeChannel(channelRef.current);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        channelRef.current = null;
+      }
+    }
+  }, [broadcastLeave]);
 
   useEffect(() => {
     const handleBeforeUnload = () => {
@@ -112,7 +129,13 @@ export const usePokerChannel = ({
   }, [broadcastLeave]);
 
   useEffect(() => {
-    const roomChannel = supabase.channel(`room_${roomId}`, {
+    const channelName = `room_${roomId}`;
+    const existingChannel = supabase.getChannels().find((ch) => ch.topic === `realtime:${channelName}`);
+    if (existingChannel) {
+      supabase.removeChannel(existingChannel);
+    }
+
+    const roomChannel = supabase.channel(channelName, {
       config: { presence: { key: myUserId } },
     });
 
@@ -123,7 +146,7 @@ export const usePokerChannel = ({
       let oldestTime = Infinity;
       let currentHostId: string | null = null;
       const keys = Object.keys(state);
-      
+
       const firstAvailableId = keys.filter(k => {
         const exitTime = exitedHostsRef.current[k];
         const pData = (state[k] as any[])?.[0];
@@ -138,6 +161,10 @@ export const usePokerChannel = ({
         const exitTime = exitedHostsRef.current[key];
         if (exitTime && (playerData.joinedAt || 0) <= exitTime) {
           continue;
+        }
+
+        if (exitTime) {
+          delete exitedHostsRef.current[key];
         }
 
         const jTime = playerData.joinedAt || Date.now();
@@ -225,9 +252,9 @@ export const usePokerChannel = ({
       setPlayers((prev) => prev.map((p) => ({ ...p, selectedCard: null })));
     };
 
-    const handleHostLeaving = (payload: any) => {
+    const handlePlayerLeaving = (payload: any) => {
       const { userId, timestamp } = payload.payload;
-      exitedHostsRef.current[userId] = timestamp;
+      exitedHostsRef.current[userId] = timestamp || Date.now();
       setPlayers((prev) => prev.filter((p) => p.id !== userId));
 
       if (customHostIdRef.current === userId) {
@@ -303,13 +330,14 @@ export const usePokerChannel = ({
       }
     };
 
-    roomChannel
+   roomChannel
       .on("presence", { event: "sync" }, handlePresenceSync)
       .on("broadcast", { event: "vote" }, handleVote)
       .on("broadcast", { event: "reveal_state" }, handleRevealState)
       .on("broadcast", { event: "story_state" }, handleStoryState)
       .on("broadcast", { event: "revote" }, handleRevote)
-      .on("broadcast", { event: "host_leaving" }, handleHostLeaving)
+      .on("broadcast", { event: "player_leaving" }, handlePlayerLeaving)
+      .on("broadcast", { event: "host_leaving" }, handlePlayerLeaving)
       .on("broadcast", { event: "session_ended" }, handleSessionEnded)
       .on("broadcast", { event: "request_sync" }, handleRequestSync)
       .on("broadcast", { event: "sync_response" }, handleSyncResponse)
@@ -324,10 +352,15 @@ export const usePokerChannel = ({
 
     return () => {
       broadcastLeave();
-      supabase.removeChannel(roomChannel);
-      channelRef.current = null;
+      if (channelRef.current) {
+        const currentChannel = channelRef.current;
+        channelRef.current = null;
+        currentChannel.untrack().finally(() => {
+          supabase.removeChannel(currentChannel);
+        });
+      }
     };
   }, [roomId, updatePresence, broadcastLeave]);
 
-  return { channelRef, updatePresence, roomStateRef };
+  return { channelRef, updatePresence, roomStateRef, leaveRoom };
 };
