@@ -20,6 +20,8 @@ import {
   Sun,
   Moon,
   Shield,
+  Rocket,
+  Key,
 } from "lucide-react";
 
 export const getUserId = () => {
@@ -63,6 +65,8 @@ export const PLAYER_ICONS: LucideIcon[] = [
   Sun,
   Moon,
   Shield,
+  Rocket,
+  Key,
 ];
 
 export interface VoteStat {
