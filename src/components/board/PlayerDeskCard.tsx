@@ -35,6 +35,9 @@ export const PlayerDeskCard: React.FC<PlayerDeskCardProps> = ({
 }) => {
   const isFaded = isOffline || isLateJoin;
   const isMenuOpen = activeMenuId === player.id;
+  const isPlayerHost = player.id === hostId;
+  const DisplayIcon = isPlayerHost ? Crown : Icon;
+  const iconColorClass = isPlayerHost ? "text-amber-400" : "text-neutral-400";
 
   return (
     <div
@@ -62,12 +65,8 @@ export const PlayerDeskCard: React.FC<PlayerDeskCardProps> = ({
             {player.selectedCard ? (
               <Check className="w-5 h-5 text-emerald-400" />
             ) : (
-              <Icon
-                className={
-                  isCrowded
-                    ? "w-5 h-5 text-neutral-400"
-                    : "w-7 h-7 text-neutral-400"
-                }
+              <DisplayIcon
+                className={`${isCrowded ? "w-5 h-5" : "w-7 h-7"} ${iconColorClass}`}
               />
             )}
           </div>
@@ -88,12 +87,8 @@ export const PlayerDeskCard: React.FC<PlayerDeskCardProps> = ({
                 {player.selectedCard}
               </span>
             ) : (
-              <Icon
-                className={
-                  isCrowded
-                    ? "w-5 h-5 text-neutral-400"
-                    : "w-7 h-7 text-neutral-400"
-                }
+              <DisplayIcon
+                className={`${isCrowded ? "w-5 h-5" : "w-7 h-7"} ${iconColorClass}`}
               />
             )}
           </div>
@@ -149,18 +144,6 @@ export const PlayerDeskCard: React.FC<PlayerDeskCardProps> = ({
               </div>
             )}
           </div>
-        )}
-
-        {player.id === hostId && (
-          <span
-            className={`absolute transform rotate-12 drop-shadow-md z-20 transition-all ${
-              isCrowded
-                ? "-top-2.5 -right-1.5 text-sm"
-                : "-top-3.5 -right-3 text-lg"
-            }`}
-          >
-            👑
-          </span>
         )}
 
         {player.id === myUserId && (
