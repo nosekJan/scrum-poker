@@ -1,5 +1,5 @@
 import React from "react";
-import { MoreVertical, Crown, Ban, Check } from "lucide-react";
+import { MoreVertical, Crown, Ban, Check, type LucideIcon } from "lucide-react";
 import type { Player } from "../../types/poker";
 
 interface PlayerDeskCardProps {
@@ -11,7 +11,7 @@ interface PlayerDeskCardProps {
   isCrowded: boolean;
   isOffline: boolean;
   isLateJoin: boolean;
-  emoji: string;
+  icon: LucideIcon;
   activeMenuId: string | null;
   setActiveMenuId: (id: string | null) => void;
   onPromote: (id: string) => void;
@@ -27,7 +27,7 @@ export const PlayerDeskCard: React.FC<PlayerDeskCardProps> = ({
   isCrowded,
   isOffline,
   isLateJoin,
-  emoji,
+  icon: Icon,
   activeMenuId,
   setActiveMenuId,
   onPromote,
@@ -62,9 +62,13 @@ export const PlayerDeskCard: React.FC<PlayerDeskCardProps> = ({
             {player.selectedCard ? (
               <Check className="w-5 h-5 text-emerald-400" />
             ) : (
-              <span className={isCrowded ? "text-xl" : "text-2xl"}>
-                {emoji}
-              </span>
+              <Icon
+                className={
+                  isCrowded
+                    ? "w-5 h-5 text-neutral-400"
+                    : "w-7 h-7 text-neutral-400"
+                }
+              />
             )}
           </div>
 
@@ -84,9 +88,13 @@ export const PlayerDeskCard: React.FC<PlayerDeskCardProps> = ({
                 {player.selectedCard}
               </span>
             ) : (
-              <span className={isCrowded ? "text-xl" : "text-2xl"}>
-                {emoji}
-              </span>
+              <Icon
+                className={
+                  isCrowded
+                    ? "w-5 h-5 text-neutral-400"
+                    : "w-7 h-7 text-neutral-400"
+                }
+              />
             )}
           </div>
         </div>

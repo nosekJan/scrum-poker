@@ -1,4 +1,27 @@
 import type { Player } from "../types/poker";
+import type { LucideIcon } from "lucide-react";
+import {
+  User,
+  Smile,
+  Cat,
+  Dog,
+  Ghost,
+  Bot,
+  Sparkles,
+  Zap,
+  Heart,
+  Star,
+  Crown,
+  Gamepad2,
+  Flame,
+  Skull,
+  Bug,
+  Coffee,
+  Music,
+  Sun,
+  Moon,
+  Shield,
+} from "lucide-react";
 
 export const getUserId = () => {
   let id = localStorage.getItem("poker_user_id");
@@ -20,14 +43,28 @@ export const formatTime = (ms: number) => {
   return `${minutes}:${seconds}`;
 };
 
-/* --- REFACTORING HELPERS --- */
 
-export const PLAYER_EMOJIS = [
-  "🦊", "🐰", "🐼", "🐨", "🐯", "🦁", "🐸", "🐵", "🦉", "🦄",
-  "🐙", "🦖", "🦥", "🦦", "👽", "🤖", "👻", "🦫", "🦩", "🐢",
-  "🐶", "🐱", "🐭", "🐹", "🐻", "🐷", "🐮", "🐔", "🐧", "🐦",
-  "🐤", "🦆", "🦅", "🦇", "🐺", "🐗", "🐴", "🐝", "🦋", "🐌",
-  "🐞", "🐜", "🦂", "🕷️", "🐒", "🦍", "🦧", "🐕", "🐈", "🐆",
+export const PLAYER_ICONS: LucideIcon[] = [
+  User,
+  Smile,
+  Cat,
+  Dog,
+  Ghost,
+  Bot,
+  Sparkles,
+  Zap,
+  Heart,
+  Star,
+  Crown,
+  Gamepad2,
+  Flame,
+  Skull,
+  Bug,
+  Coffee,
+  Music,
+  Sun,
+  Moon,
+  Shield,
 ];
 
 export interface VoteStat {
@@ -42,13 +79,10 @@ export interface TieInfo {
   highest: string;
 }
 
-/**
- * Generuje deterministické mapovanie emodži pre hráčov
- */
-export function getPlayerEmojiMapping(players: Player[]): Record<string, string> {
+export function getPlayerIconMapping(players: Player[]): Record<string, LucideIcon> {
   const sortedPlayers = [...players].sort((a, b) => a.id.localeCompare(b.id));
-  const mapping: Record<string, string> = {};
-  const usedEmojis = new Set<string>();
+  const mapping: Record<string, LucideIcon> = {};
+  const usedIndices = new Set<number>();
 
   sortedPlayers.forEach((player) => {
     const seedSource = (player as Player & { emojiSeed?: string }).emojiSeed?.toString() || player.id;
@@ -58,31 +92,25 @@ export function getPlayerEmojiMapping(players: Player[]): Record<string, string>
       hash = seedSource.charCodeAt(i) + ((hash << 5) - hash);
     }
 
-    let baseIndex = Math.abs(hash) % PLAYER_EMOJIS.length;
-    let chosenEmoji = PLAYER_EMOJIS[baseIndex];
+    let baseIndex = Math.abs(hash) % PLAYER_ICONS.length;
     let attempts = 0;
 
-    while (usedEmojis.has(chosenEmoji) && attempts < PLAYER_EMOJIS.length) {
-      baseIndex = (baseIndex + 1) % PLAYER_EMOJIS.length;
-      chosenEmoji = PLAYER_EMOJIS[baseIndex];
+    while (usedIndices.has(baseIndex) && attempts < PLAYER_ICONS.length) {
+      baseIndex = (baseIndex + 1) % PLAYER_ICONS.length;
       attempts++;
     }
 
-    if (attempts >= PLAYER_EMOJIS.length) {
-      baseIndex = Math.abs(hash) % PLAYER_EMOJIS.length;
-      chosenEmoji = PLAYER_EMOJIS[baseIndex];
+    if (attempts >= PLAYER_ICONS.length) {
+      baseIndex = Math.abs(hash) % PLAYER_ICONS.length;
     }
 
-    mapping[player.id] = chosenEmoji;
-    usedEmojis.add(chosenEmoji);
+    mapping[player.id] = PLAYER_ICONS[baseIndex];
+    usedIndices.add(baseIndex);
   });
 
   return mapping;
 }
 
-/**
- * Vypočíta matematický priemer hlasov
- */
 export function calculateAverage(players: Player[]): string {
   const validVotes = players
     .map((p) => parseFloat(p.selectedCard as string))
@@ -98,9 +126,6 @@ export function calculateAverage(players: Player[]): string {
   ).toFixed(1);
 }
 
-/**
- * Spočíta distribučné štatistiky kariet
- */
 export function calculateVoteStats(
   players: Player[],
   isRevealed: boolean
@@ -127,9 +152,6 @@ export function calculateVoteStats(
     .sort((a, b) => b.count - a.count);
 }
 
-/**
- * Vyhodnotí remízu (Tie-break)
- */
 export function calculateTieInfo(
   voteStats: VoteStat[],
   averageStr: string

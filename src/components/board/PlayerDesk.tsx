@@ -3,7 +3,7 @@ import { usePoker } from "../../hooks/usePoker";
 import { myUserId } from "../../utils/poker";
 import type { Player } from "../../types/poker";
 import {
-  getPlayerEmojiMapping,
+  getPlayerIconMapping,
   calculateAverage,
   calculateVoteStats,
   calculateTieInfo,
@@ -67,8 +67,8 @@ export const PlayerDesk: React.FC = () => {
   }, [isRevealed, votesSnapshot, players, seenDuringReveal]);
 
   const isCrowded = displayedPlayers.length > 10;
-  const playerEmojis = useMemo(
-    () => getPlayerEmojiMapping(displayedPlayers),
+  const playerIcons = useMemo(
+    () => getPlayerIconMapping(displayedPlayers),
     [displayedPlayers],
   );
   const average = useMemo(
@@ -155,7 +155,7 @@ export const PlayerDesk: React.FC = () => {
               isCrowded={isCrowded}
               isOffline={isOffline}
               isLateJoin={isLateJoin}
-              emoji={playerEmojis[player.id]}
+              icon={playerIcons[player.id]}
               activeMenuId={activeMenuId}
               setActiveMenuId={setActiveMenuId}
               onPromote={promotePlayer}
