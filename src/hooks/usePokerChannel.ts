@@ -56,11 +56,11 @@ export const usePokerChannel = ({
     players,
     customHostId: null as string | null,
   });
-
-  const hostIdRef = useRef<string | null>(null);
+const hostIdRef = useRef<string | null>(null);
   const playersRef = useRef<Player[]>([]);
   const onLeaveRef = useRef(onLeave);
   const playerNameRef = useRef(playerName);
+  const isSubscribedRef = useRef<boolean>(false);
 
   const [isKicked, setIsKicked] = useState<boolean>(false);
   const [isSessionEnded, setIsSessionEnded] = useState<boolean>(false);
@@ -98,7 +98,7 @@ export const usePokerChannel = ({
   }, []);
 
   const broadcastLeave = useCallback(() => {
-    if (channelRef.current) {
+    if (channelRef.current && isSubscribedRef.current) {
       channelRef.current.send({
         type: "broadcast",
         event: "player_leaving",
@@ -357,13 +357,17 @@ export const usePokerChannel = ({
       .on("broadcast", { event: "kick_player" }, handleKickPlayer)
       .subscribe((status: string) => {
         if (status === "SUBSCRIBED") {
+          isSubscribedRef.current = true;
           updatePresence();
           roomChannel.send({ type: "broadcast", event: "request_sync", payload: {} });
+        } else {
+          isSubscribedRef.current = false;
         }
       });
 
     return () => {
       broadcastLeave();
+      isSubscribedRef.current = false;
       if (channelRef.current) {
         const currentChannel = channelRef.current;
         channelRef.current = null;
