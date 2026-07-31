@@ -6,7 +6,14 @@ import type { Player, CardValue } from "../types/poker";
 
 export { myUserId, formatTime } from "../utils/poker";
 
-export const usePokerGame = (roomId: string, playerName: string, onLeave: () => void) => {
+import type { RoomNotificationType } from "../components/RoomNotifications";
+
+export const usePokerGame = (
+  roomId: string,
+  playerName: string,
+  onLeave: () => void,
+  addNotification?: (type: RoomNotificationType, username: string) => void
+) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [isRevealed, setIsRevealed] = useState(false);
   const [votesSnapshot, setVotesSnapshot] = useState<Player[] | null>(null);
@@ -40,6 +47,7 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     setCompletedStories,
     storyStartTime,
     setStoryStartTime,
+    addNotification,
   });
 
   const exitRoom = useCallback(async () => {

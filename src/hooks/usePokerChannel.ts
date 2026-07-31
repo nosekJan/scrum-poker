@@ -20,6 +20,7 @@ interface UsePokerChannelProps {
   setCompletedStories: React.Dispatch<React.SetStateAction<Story[]>>;
   storyStartTime: number | null;
   setStoryStartTime: React.Dispatch<React.SetStateAction<number | null>>;
+  addNotification?: (type: "join" | "leave" | "kick" | "promote", username: string) => void;
 }
 
 export const usePokerChannel = ({
@@ -39,6 +40,7 @@ export const usePokerChannel = ({
   setCompletedStories,
   storyStartTime,
   setStoryStartTime,
+  addNotification,
 }: UsePokerChannelProps) => {
   const channelRef = useRef<any>(null);
   const joinedAtRef = useRef(Date.now());
@@ -60,6 +62,7 @@ const hostIdRef = useRef<string | null>(null);
   const playersRef = useRef<Player[]>([]);
   const onLeaveRef = useRef(onLeave);
   const playerNameRef = useRef(playerName);
+  const addNotificationRef = useRef(addNotification);
   const isSubscribedRef = useRef<boolean>(false);
 
   const [isKicked, setIsKicked] = useState<boolean>(false);
@@ -84,7 +87,8 @@ const hostIdRef = useRef<string | null>(null);
   useEffect(() => {
     onLeaveRef.current = onLeave;
     playerNameRef.current = playerName;
-  }, [onLeave, playerName]);
+    addNotificationRef.current = addNotification;
+  }, [onLeave, playerName, addNotification]);
 
  const updatePresence = useCallback(() => {
     if (!channelRef.current) return;
@@ -323,10 +327,16 @@ const hostIdRef = useRef<string | null>(null);
     };
 
     const handlePromoteHost = (payload: any) => {
-      const { hostId: nextHostId } = payload.payload;
+      const { hostId: nextHostId, username } = payload.payload;
       customHostIdRef.current = nextHostId;
       setHostId(nextHostId);
       hostIdRef.current = nextHostId;
+
+      const targetPlayer = playersRef.current.find((p) => p.id === nextHostId);
+      const promotedName = username || targetPlayer?.name;
+      if (promotedName && addNotificationRef.current) {
+        addNotificationRef.current("promote", promotedName);
+      }
     };
 
    const handleKickPlayer = (payload: any) => {
@@ -392,6 +402,25 @@ const hostIdRef = useRef<string | null>(null);
     }
   }, [setPlayers]);
 
+  const promotePlayer = useCallback(async (playerId: string) => {
+    customHostIdRef.current = playerId;
+    setHostId(playerId);
+    hostIdRef.current = playerId;
+
+    const targetPlayer = playersRef.current.find((p) => p.id === playerId);
+    if (targetPlayer && addNotificationRef.current) {
+      addNotificationRef.current("promote", targetPlayer.name);
+    }
+
+    if (channelRef.current) {
+      await channelRef.current.send({
+        type: "broadcast",
+        event: "promote_host",
+        payload: { hostId: playerId, username: targetPlayer?.name },
+      });
+    }
+  }, [setHostId]);
+
   const endSession = useCallback(async () => {
     if (channelRef.current) {
       await channelRef.current.send({
@@ -410,6 +439,7 @@ const hostIdRef = useRef<string | null>(null);
     leaveRoom,
     isKicked,
     kickPlayer,
+    promotePlayer,
     isSessionEnded,
     endSession,
     kickedUserIdsRef,

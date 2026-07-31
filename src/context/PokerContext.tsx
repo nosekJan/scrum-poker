@@ -47,7 +47,6 @@ export const PokerProvider: React.FC<{
   onLeave: () => void;
   children: React.ReactNode;
 }> = ({ roomId, playerName, onLeave, children }) => {
-  const poker = usePokerGame(roomId, playerName, onLeave);
   const hasFiredConfetti = useRef(false);
 
   const [notifications, setNotifications] = useState<RoomNotification[]>([]);
@@ -65,6 +64,8 @@ export const PokerProvider: React.FC<{
     },
     [],
   );
+
+  const poker = usePokerGame(roomId, playerName, onLeave, addNotification);
 
   useEffect(() => {
     if (poker.isSessionEnded || poker.isKicked) {

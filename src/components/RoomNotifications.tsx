@@ -1,7 +1,7 @@
 import React from "react";
-import { UserPlus, UserMinus, UserX } from "lucide-react";
+import { UserPlus, UserMinus, UserX, Crown } from "lucide-react";
 
-export type RoomNotificationType = "join" | "leave" | "kick";
+export type RoomNotificationType = "join" | "leave" | "kick" | "promote";
 
 export interface RoomNotification {
   id: string;
@@ -31,7 +31,9 @@ export const RoomNotifications: React.FC<RoomNotificationsProps> = ({
               ${
                 notif.type === "join"
                   ? "bg-zinc-900/90 border-emerald-500/30 text-zinc-200"
-                  : "bg-zinc-900/90 border-rose-500/30 text-zinc-300"
+                  : notif.type === "promote"
+                    ? "bg-zinc-900/90 border-amber-500/30 text-zinc-200"
+                    : "bg-zinc-900/90 border-rose-500/30 text-zinc-300"
               }
             `}
           >
@@ -44,6 +46,9 @@ export const RoomNotifications: React.FC<RoomNotificationsProps> = ({
             {notif.type === "kick" && (
               <UserX className="w-4 h-4 text-rose-400 shrink-0" />
             )}
+            {notif.type === "promote" && (
+              <Crown className="w-4 h-4 text-amber-400 shrink-0" />
+            )}
 
             <span>
               <strong className="text-white font-semibold">
@@ -52,6 +57,7 @@ export const RoomNotifications: React.FC<RoomNotificationsProps> = ({
               {notif.type === "join" && "joined"}
               {notif.type === "leave" && "left"}
               {notif.type === "kick" && "was kicked"}
+              {notif.type === "promote" && "was promoted"}
             </span>
           </div>
         );
