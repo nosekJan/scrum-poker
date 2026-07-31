@@ -282,6 +282,7 @@ const hostIdRef = useRef<string | null>(null);
     };
 
     const handleSessionEnded = () => {
+      if (kickedUserIdsRef.current.has(myUserId)) return;
       setIsSessionEnded(true);
       if (channelRef.current) {
         channelRef.current.untrack().catch(() => {});
