@@ -34,6 +34,7 @@ interface PokerContextType {
   leaveRoom: () => Promise<void>;
   notifications: RoomNotification[];
   isKicked: boolean;
+  isSessionEnded: boolean;
 }
 
 export const PokerContext = createContext<PokerContextType | undefined>(

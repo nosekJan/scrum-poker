@@ -62,6 +62,7 @@ export const usePokerChannel = ({
   const playerNameRef = useRef(playerName);
 
   const [isKicked, setIsKicked] = useState<boolean>(false);
+  const [isSessionEnded, setIsSessionEnded] = useState<boolean>(false);
 
   useEffect(() => {
     roomStateRef.current = {
@@ -280,7 +281,10 @@ export const usePokerChannel = ({
     };
 
     const handleSessionEnded = () => {
-      onLeaveRef.current();
+      setIsSessionEnded(true);
+      if (channelRef.current) {
+        channelRef.current.untrack().catch(() => {});
+      }
     };
 
     const handleRequestSync = () => {
@@ -380,5 +384,25 @@ export const usePokerChannel = ({
     }
   }, [setPlayers]);
 
-  return { channelRef, updatePresence, roomStateRef, leaveRoom, isKicked, kickPlayer };
+  const endSession = useCallback(async () => {
+    if (channelRef.current) {
+      await channelRef.current.send({
+        type: "broadcast",
+        event: "session_ended",
+        payload: {},
+      });
+    }
+    await leaveRoom();
+  }, [leaveRoom]);
+
+  return {
+    channelRef,
+    updatePresence,
+    roomStateRef,
+    leaveRoom,
+    isKicked,
+    kickPlayer,
+    isSessionEnded,
+    endSession,
+  };
 };

@@ -8,6 +8,7 @@ import { VotingDeck } from "./board/VotingDeck";
 import { BugReportWidget } from "./BugReportWidget";
 import { RoomNotifications } from "./RoomNotifications";
 import { KickedModal } from "./KickedModal";
+import { SessionEndedModal } from "./SessionEndedModal";
 
 interface BoardProps {
   roomId: string;
@@ -20,11 +21,12 @@ const BoardContent: React.FC<BoardProps> = ({
   playerName,
   onLeave,
 }) => {
-  const { notifications, isKicked, leaveRoom } = usePoker();
+  const { notifications, isKicked, isSessionEnded, leaveRoom } = usePoker();
 
   return (
     <div className="relative min-h-screen lg:h-screen flex flex-col p-4 lg:py-3 lg:px-6 bg-neutral-950 text-white">
       <KickedModal isOpen={isKicked} onConfirm={leaveRoom} />
+      <SessionEndedModal isOpen={isSessionEnded} onConfirm={leaveRoom} />
 
       <RoomNotifications notifications={notifications} />
 
