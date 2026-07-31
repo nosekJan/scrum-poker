@@ -67,6 +67,11 @@ export const PokerProvider: React.FC<{
   );
 
   useEffect(() => {
+    if (poker.isSessionEnded || poker.isKicked) {
+      setNotifications([]);
+      return;
+    }
+
     if (isInitialLoad.current) {
       if (poker.players.length > 0) {
         prevPlayersRef.current = poker.players;
@@ -95,7 +100,7 @@ export const PokerProvider: React.FC<{
     });
 
     prevPlayersRef.current = currentPlayers;
-  }, [poker.players, addNotification]);
+  }, [poker.players, poker.isSessionEnded, poker.isKicked, addNotification]);
 
   useEffect(() => {
     if (!poker.isRevealed) {
