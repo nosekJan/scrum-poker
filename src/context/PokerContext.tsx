@@ -96,7 +96,12 @@ export const PokerProvider: React.FC<{
     });
 
     left.forEach((player) => {
-      addNotification("leave", player.name);
+      if (poker.kickedUserIdsRef.current.has(player.id)) {
+        addNotification("kick", player.name);
+        poker.kickedUserIdsRef.current.delete(player.id);
+      } else {
+        addNotification("leave", player.name);
+      }
     });
 
     prevPlayersRef.current = currentPlayers;

@@ -23,7 +23,7 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     deleteStoryFromDB
   } = usePokerStories(roomId);
 
-  const { channelRef, roomStateRef, leaveRoom, isKicked, kickPlayer, isSessionEnded } = usePokerChannel({
+  const { channelRef, roomStateRef, leaveRoom, isKicked, kickPlayer, isSessionEnded, kickedUserIdsRef } = usePokerChannel({
     roomId,
     playerName,
     onLeave,
@@ -190,5 +190,6 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     leaveRoom: exitRoom,
     isKicked,
     isSessionEnded,
+    kickedUserIdsRef,
   };
 };

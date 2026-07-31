@@ -44,6 +44,7 @@ export const usePokerChannel = ({
   const joinedAtRef = useRef(Date.now());
   const emojiSeedRef = useRef(Math.random());
   const exitedHostsRef = useRef<Record<string, number>>({});
+  const kickedUserIdsRef = useRef<Set<string>>(new Set());
   const customHostIdRef = useRef<string | null>(null);
 
   const roomStateRef = useRef({
@@ -330,6 +331,7 @@ export const usePokerChannel = ({
    const handleKickPlayer = (payload: any) => {
       const { playerId } = payload.payload;
       exitedHostsRef.current[playerId] = Date.now();
+      kickedUserIdsRef.current.add(playerId);
       if (playerId === myUserId) {
         setIsKicked(true);
         if (channelRef.current) {
@@ -374,6 +376,7 @@ export const usePokerChannel = ({
 
   const kickPlayer = useCallback(async (playerId: string) => {
     exitedHostsRef.current[playerId] = Date.now();
+    kickedUserIdsRef.current.add(playerId);
     setPlayers((prev) => prev.filter((p) => p.id !== playerId));
     if (channelRef.current) {
       await channelRef.current.send({
@@ -404,5 +407,6 @@ export const usePokerChannel = ({
     kickPlayer,
     isSessionEnded,
     endSession,
+    kickedUserIdsRef,
   };
 };
