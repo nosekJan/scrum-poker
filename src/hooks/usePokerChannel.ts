@@ -3,6 +3,13 @@ import { supabase } from "../lib/supabase";
 import { myUserId } from "../utils/poker";
 import type { Player, Story } from "../types/poker";
 
+interface PresencePayload {
+  presence_ref: string;
+  name: string;
+  joinedAt?: number;
+  emojiSeed?: number;
+  customHostId?: string | null;
+}
 interface UsePokerChannelProps {
   roomId: string;
   playerName: string;
@@ -90,14 +97,16 @@ const hostIdRef = useRef<string | null>(null);
     addNotificationRef.current = addNotification;
   }, [onLeave, playerName, addNotification]);
 
- const updatePresence = useCallback(() => {
+ const updatePresence = useCallback((nextCustomHostId?: string | null) => {
     if (!channelRef.current) return;
     delete exitedHostsRef.current[myUserId];
     joinedAtRef.current = Date.now();
+    const hostToTrack = nextCustomHostId !== undefined ? nextCustomHostId : customHostIdRef.current;
     channelRef.current.track({
       name: playerNameRef.current,
       joinedAt: joinedAtRef.current,
       emojiSeed: emojiSeedRef.current,
+      customHostId: hostToTrack,
     }).catch(() => {});
   }, []);
 
@@ -136,6 +145,23 @@ const hostIdRef = useRef<string | null>(null);
     };
   }, [broadcastLeave]);
 
+  const handlePromoteHost = useCallback((payload: any) => {
+    const { hostId: nextHostId, username } = payload.payload;
+    customHostIdRef.current = nextHostId;
+    roomStateRef.current.customHostId = nextHostId;
+    setHostId(nextHostId);
+    hostIdRef.current = nextHostId;
+
+    updatePresence(nextHostId);
+
+    const targetPlayer = playersRef.current.find((p) => p.id === nextHostId);
+    const promotedName = username || targetPlayer?.name;
+    console.log("[PROMOTE HOST RECEIVED] nextHostId: " + nextHostId + " | promotedName: " + promotedName);
+    if (promotedName && addNotificationRef.current) {
+      addNotificationRef.current("promote", promotedName);
+    }
+  }, [setHostId, updatePresence]);
+
   useEffect(() => {
     const channelName = `room_${roomId}`;
     const existingChannel = supabase.getChannels().find((ch) => ch.topic === `realtime:${channelName}`);
@@ -152,19 +178,22 @@ const hostIdRef = useRef<string | null>(null);
     const handlePresenceSync = () => {
       const state = roomChannel.presenceState();
       let oldestTime = Infinity;
-      let currentHostId: string | null = null;
-      const keys = Object.keys(state);
+      let defaultHostId: string | null = null;
+      const activePlayersMap: Record<string, PresencePayload> = {};
 
-      const firstAvailableId = keys.filter(k => {
-        const exitTime = exitedHostsRef.current[k];
-        const pData = (state[k] as any[])?.[0];
-        return !exitTime || (pData && (pData.joinedAt || 0) > exitTime);
-      })[0] || null;
+      let presenceCustomHostId: string | null = null;
 
-      for (const [key, presenceArray] of Object.entries(state)) {
-        const sortedPresence = [...(presenceArray as any[])].sort((a, b) => (b.joinedAt || 0) - (a.joinedAt || 0));
+      for (const [key, rawPresenceArray] of Object.entries(state)) {
+        const presenceArray = rawPresenceArray as unknown as PresencePayload[];
+        if (!Array.isArray(presenceArray) || presenceArray.length === 0) continue;
+
+        const sortedPresence = [...presenceArray].sort((a, b) => (b.joinedAt || 0) - (a.joinedAt || 0));
         const playerData = sortedPresence[0];
         if (!playerData) continue;
+
+        if (playerData.customHostId) {
+          presenceCustomHostId = playerData.customHostId;
+        }
 
         const exitTime = exitedHostsRef.current[key];
         if (exitTime && (playerData.joinedAt || 0) <= exitTime) {
@@ -175,41 +204,41 @@ const hostIdRef = useRef<string | null>(null);
           delete exitedHostsRef.current[key];
         }
 
+        activePlayersMap[key] = playerData;
+
         const jTime = playerData.joinedAt || Date.now();
         if (jTime < oldestTime) {
           oldestTime = jTime;
-          currentHostId = key;
+          defaultHostId = key;
         }
       }
 
-      const isCustomHostPresent = customHostIdRef.current &&
-        state[customHostIdRef.current] &&
-        (!exitedHostsRef.current[customHostIdRef.current] ||
-          ((state[customHostIdRef.current] as any[])?.[0]?.joinedAt || 0) > exitedHostsRef.current[customHostIdRef.current]);
+      const activeKeys = Object.keys(activePlayersMap);
+      if (activeKeys.length === 0) return;
 
-      const finalHostId = isCustomHostPresent
-        ? customHostIdRef.current
-        : (currentHostId || firstAvailableId);
+      const currentCustomHost = presenceCustomHostId || customHostIdRef.current || roomStateRef.current.customHostId;
+      const isCustomHostExited = Boolean(currentCustomHost && exitedHostsRef.current[currentCustomHost]);
 
-      if (!isCustomHostPresent) {
+      if (isCustomHostExited) {
         customHostIdRef.current = null;
+      } else if (currentCustomHost) {
+        customHostIdRef.current = currentCustomHost;
       }
+
+      roomStateRef.current.customHostId = customHostIdRef.current;
+
+      const finalHostId = (customHostIdRef.current && activeKeys.includes(customHostIdRef.current))
+        ? customHostIdRef.current
+        : defaultHostId;
+
+      console.log("[PRESENCE SYNC] finalHost: " + finalHostId + " | customHost: " + customHostIdRef.current + " | activeKeys: " + activeKeys.join(", "));
 
       setHostId(finalHostId);
       hostIdRef.current = finalHostId;
 
       setPlayers((prevPlayers) => {
         const activePlayers: Player[] = [];
-        for (const [key, presenceArray] of Object.entries(state)) {
-          const sortedPresence = [...(presenceArray as any[])].sort((a, b) => (b.joinedAt || 0) - (a.joinedAt || 0));
-          const playerData = sortedPresence[0];
-          if (!playerData) continue;
-
-          const exitTime = exitedHostsRef.current[key];
-          if (exitTime && (playerData.joinedAt || 0) <= exitTime) {
-            continue;
-          }
-
+        for (const [key, playerData] of Object.entries(activePlayersMap)) {
           const existingPlayer = prevPlayers.find((p) => p.id === key);
 
           activePlayers.push({
@@ -262,11 +291,13 @@ const hostIdRef = useRef<string | null>(null);
 
     const handlePlayerLeaving = (payload: any) => {
       const { userId, timestamp } = payload.payload;
+      console.log("[PLAYER LEAVING] leavingUserId: " + userId + " | customHostId: " + customHostIdRef.current + " | currentHostId: " + hostIdRef.current);
       exitedHostsRef.current[userId] = timestamp || Date.now();
       setPlayers((prev) => prev.filter((p) => p.id !== userId));
 
       if (customHostIdRef.current === userId) {
         customHostIdRef.current = null;
+        roomStateRef.current.customHostId = null;
       }
 
       setHostId((current) => {
@@ -293,8 +324,14 @@ const hostIdRef = useRef<string | null>(null);
       }
     };
 
-    const handleRequestSync = () => {
-      if (hostIdRef.current === myUserId) {
+   const handleRequestSync = () => {
+      const activeCustomHost = customHostIdRef.current || roomStateRef.current.customHostId;
+      const isCurrentHost = hostIdRef.current === myUserId;
+
+      console.log("[REQUEST SYNC] responderHostId: " + hostIdRef.current + " | myUserId: " + myUserId + " | customHost: " + activeCustomHost);
+
+      if (isCurrentHost) {
+        roomStateRef.current.customHostId = activeCustomHost;
         roomChannel.send({
           type: "broadcast",
           event: "sync_response",
@@ -304,19 +341,25 @@ const hostIdRef = useRef<string | null>(null);
     };
 
     const handleSyncResponse = (payload: any) => {
+    const incomingCustomHost = payload.payload.customHostId;
+    console.log("[SYNC RESPONSE] receivedCustomHost: " + incomingCustomHost);
+
+    if (incomingCustomHost) {
+      customHostIdRef.current = incomingCustomHost;
+      roomStateRef.current.customHostId = incomingCustomHost;
+      setHostId(incomingCustomHost);
+      hostIdRef.current = incomingCustomHost;
+      updatePresence(incomingCustomHost);
+    }
+
       if (hostIdRef.current === myUserId) return;
+
       setIsRevealed(payload.payload.isRevealed);
       setVotesSnapshot(payload.payload.votesSnapshot || null);
       setActiveStory(payload.payload.activeStory);
       setCompletedStories(payload.payload.completedStories);
       setStoryStartTime(payload.payload.storyStartTime);
       roomStateRef.current.storyStartTime = payload.payload.storyStartTime;
-
-      if (payload.payload.customHostId) {
-        customHostIdRef.current = payload.payload.customHostId;
-        setHostId(payload.payload.customHostId);
-        hostIdRef.current = payload.payload.customHostId;
-      }
 
       if (payload.payload.players) {
         setPlayers((prev) => prev.map((p) => {
@@ -326,23 +369,15 @@ const hostIdRef = useRef<string | null>(null);
       }
     };
 
-    const handlePromoteHost = (payload: any) => {
-      const { hostId: nextHostId, username } = payload.payload;
-      customHostIdRef.current = nextHostId;
-      setHostId(nextHostId);
-      hostIdRef.current = nextHostId;
-
-      const targetPlayer = playersRef.current.find((p) => p.id === nextHostId);
-      const promotedName = username || targetPlayer?.name;
-      if (promotedName && addNotificationRef.current) {
-        addNotificationRef.current("promote", promotedName);
-      }
-    };
-
-   const handleKickPlayer = (payload: any) => {
+    const handleKickPlayer = (payload: any) => {
       const { playerId } = payload.payload;
       exitedHostsRef.current[playerId] = Date.now();
       kickedUserIdsRef.current.add(playerId);
+      if (customHostIdRef.current === playerId) {
+        customHostIdRef.current = null;
+        roomStateRef.current.customHostId = null;
+      }
+      console.log("[KICK PLAYER] kickedId: " + playerId + " | myUserId: " + myUserId);
       if (playerId === myUserId) {
         setIsKicked(true);
         if (channelRef.current) {
@@ -387,11 +422,15 @@ const hostIdRef = useRef<string | null>(null);
         });
       }
     };
-  }, [roomId, updatePresence, broadcastLeave]);
+  }, [roomId, updatePresence, broadcastLeave, handlePromoteHost]);
 
   const kickPlayer = useCallback(async (playerId: string) => {
     exitedHostsRef.current[playerId] = Date.now();
     kickedUserIdsRef.current.add(playerId);
+    if (customHostIdRef.current === playerId) {
+      customHostIdRef.current = null;
+      roomStateRef.current.customHostId = null;
+    }
     setPlayers((prev) => prev.filter((p) => p.id !== playerId));
     if (channelRef.current) {
       await channelRef.current.send({
@@ -403,23 +442,20 @@ const hostIdRef = useRef<string | null>(null);
   }, [setPlayers]);
 
   const promotePlayer = useCallback(async (playerId: string) => {
-    customHostIdRef.current = playerId;
-    setHostId(playerId);
-    hostIdRef.current = playerId;
-
+    console.log("[PROMOTE PLAYER TRIGGERED] targetId: " + playerId);
     const targetPlayer = playersRef.current.find((p) => p.id === playerId);
-    if (targetPlayer && addNotificationRef.current) {
-      addNotificationRef.current("promote", targetPlayer.name);
-    }
+    const username = targetPlayer?.name;
+
+    handlePromoteHost({ payload: { hostId: playerId, username } });
 
     if (channelRef.current) {
       await channelRef.current.send({
         type: "broadcast",
         event: "promote_host",
-        payload: { hostId: playerId, username: targetPlayer?.name },
+        payload: { hostId: playerId, username },
       });
     }
-  }, [setHostId]);
+  }, [handlePromoteHost]);
 
   const endSession = useCallback(async () => {
     if (channelRef.current) {
