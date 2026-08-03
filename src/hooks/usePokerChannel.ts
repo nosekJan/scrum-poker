@@ -370,23 +370,25 @@ const hostIdRef = useRef<string | null>(null);
     };
 
     const handleKickPlayer = (payload: any) => {
-      const { playerId } = payload.payload;
-      exitedHostsRef.current[playerId] = Date.now();
-      kickedUserIdsRef.current.add(playerId);
-      if (customHostIdRef.current === playerId) {
-        customHostIdRef.current = null;
-        roomStateRef.current.customHostId = null;
-      }
-      console.log("[KICK PLAYER] kickedId: " + playerId + " | myUserId: " + myUserId);
-      if (playerId === myUserId) {
-        setIsKicked(true);
-        if (channelRef.current) {
-          channelRef.current.untrack().catch(() => {});
-        }
-      } else {
-        setPlayers((prev) => prev.filter((p) => p.id !== playerId));
-      }
-    };
+  const { playerId } = payload.payload;
+  exitedHostsRef.current[playerId] = Date.now();
+  kickedUserIdsRef.current.add(playerId);
+  if (customHostIdRef.current === playerId) {
+    customHostIdRef.current = null;
+    roomStateRef.current.customHostId = null;
+  }
+  console.log("[KICK PLAYER] kickedId: " + playerId + " | myUserId: " + myUserId);
+  if (playerId === myUserId) {
+    setIsKicked(true);
+    if (channelRef.current) {
+      channelRef.current.untrack().catch(() => {});
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+  } else {
+    setPlayers((prev) => prev.filter((p) => p.id !== playerId));
+  }
+};
 
    roomChannel
       .on("presence", { event: "sync" }, handlePresenceSync)
