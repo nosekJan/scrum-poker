@@ -6,7 +6,14 @@ import type { Player, CardValue } from "../types/poker";
 
 export { myUserId, formatTime } from "../utils/poker";
 
-export const usePokerGame = (roomId: string, playerName: string, onLeave: () => void) => {
+import type { RoomNotificationType } from "../components/RoomNotifications";
+
+export const usePokerGame = (
+  roomId: string,
+  playerName: string,
+  onLeave: () => void,
+  addNotification?: (type: RoomNotificationType, username: string) => void
+) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [isRevealed, setIsRevealed] = useState(false);
   const [votesSnapshot, setVotesSnapshot] = useState<Player[] | null>(null);
@@ -23,7 +30,7 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     deleteStoryFromDB
   } = usePokerStories(roomId);
 
-  const { channelRef, roomStateRef } = usePokerChannel({
+  const { channelRef, roomStateRef, leaveRoom, isKicked, kickPlayer, isSessionEnded, kickedUserIdsRef } = usePokerChannel({
     roomId,
     playerName,
     onLeave,
@@ -40,7 +47,13 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     setCompletedStories,
     storyStartTime,
     setStoryStartTime,
+    addNotification,
   });
+
+  const exitRoom = useCallback(async () => {
+    await leaveRoom();
+    onLeave();
+  }, [leaveRoom, onLeave]);
 
   const toggleReveal = useCallback(async (reveal: boolean) => {
     setIsRevealed(reveal);
@@ -156,17 +169,6 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     }
   }, [channelRef]);
 
-  const kickPlayer = useCallback(async (playerId: string) => {
-    setPlayers((prev) => prev.filter((p) => p.id !== playerId));
-    if (channelRef.current) {
-      await channelRef.current.send({
-        type: "broadcast",
-        event: "kick_player",
-        payload: { playerId },
-      });
-    }
-  }, [channelRef]);
-
   useEffect(() => {
     if (hostId === myUserId && !isRevealed && players.length > 0) {
       const allVoted = players.every((p) => p.selectedCard !== null);
@@ -193,5 +195,9 @@ export const usePokerGame = (roomId: string, playerName: string, onLeave: () => 
     endSession,
     kickPlayer,
     promotePlayer,
+    leaveRoom: exitRoom,
+    isKicked,
+    isSessionEnded,
+    kickedUserIdsRef,
   };
 };

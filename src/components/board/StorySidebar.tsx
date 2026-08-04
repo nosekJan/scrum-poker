@@ -180,7 +180,7 @@ export const StorySidebar: React.FC = () => {
                   className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all disabled:cursor-not-allowed cursor-pointer ${
                     !storyInput.trim()
                       ? "bg-neutral-800 border border-neutral-700 text-neutral-500"
-                      : "bg-emerald-500 border border-emerald-400/20 text-white hover:bg-emerald-400 shadow-lg shadow-emerald-500/10"
+                      : "px-4 py-2 bg-emerald-500 border border-emerald-400/20 text-white font-bold text-sm rounded-xl hover:bg-emerald-400 disabled:bg-neutral-800 disabled:text-neutral-600 disabled:border-transparent disabled:shadow-none disabled:cursor-not-allowed cursor-pointer shadow-lg shadow-emerald-500/10 transition-all active:scale-95"
                   }`}
                 >
                   Set Active Story

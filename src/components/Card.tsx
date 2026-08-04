@@ -35,7 +35,6 @@ export const Card: React.FC<CardProps> = ({
         }
       `}
     >
-      {/* Vizuálny detail v strede karty pre prémiovejší look */}
       <span
         className={
           isSelected
@@ -46,7 +45,6 @@ export const Card: React.FC<CardProps> = ({
         {value}
       </span>
 
-      {/* Malé značky v rohoch pre klasický kartový dizajn */}
       <span className="absolute top-2 left-2 text-xs opacity-40">{value}</span>
       <span className="absolute bottom-2 right-2 text-xs opacity-40 rotate-180">
         {value}

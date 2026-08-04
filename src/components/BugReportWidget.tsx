@@ -48,7 +48,7 @@ export const BugReportWidget: React.FC = () => {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      setErrorMsg("Obrázok je príliš veľký (max 5 MB).");
+      setErrorMsg("Image is too large (max 5 MB).");
       return;
     }
 
@@ -73,8 +73,8 @@ export const BugReportWidget: React.FC = () => {
     const webhookUrl = import.meta.env.VITE_DISCORD_WEBHOOK_URL;
 
     if (!webhookUrl) {
-      console.error("VITE_DISCORD_WEBHOOK_URL chýba v .env súbore");
-      setErrorMsg("Chyba v konfigurácii webhooku.");
+      console.error("VITE_DISCORD_WEBHOOK_URL is missing in the .env file");
+      setErrorMsg("Webhook configuration error.");
       setIsSubmitting(false);
       return;
     }
@@ -152,7 +152,7 @@ export const BugReportWidget: React.FC = () => {
       }
 
       if (!response.ok) {
-        throw new Error("Zlyhalo odosielanie na Discord.");
+        throw new Error("Failed to send to Discord.");
       }
 
       setIsSuccess(true);
@@ -167,7 +167,7 @@ export const BugReportWidget: React.FC = () => {
       }, 1500);
     } catch (err) {
       console.error("Bug report submit error:", err);
-      setErrorMsg("Nepodarilo sa odoslať správu. Skús to znova.");
+      setErrorMsg("Failed to send the message. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -177,12 +177,12 @@ export const BugReportWidget: React.FC = () => {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-5 right-5 z-40 flex items-center gap-2 px-3 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 rounded-full shadow-lg border border-zinc-800 transition-all duration-200"
+        className="fixed bottom-5 right-5 z-40 flex items-center gap-2 px-3 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 rounded-full shadow-lg border border-zinc-800 transition-all duration-200 cursor-pointer"
         title="Report Bug"
       >
         <Bug className="w-5 h-5 text-red-400" />
         <span className="text-xs font-bold uppercase tracking-wide pr-1 hidden sm:inline">
-          Bug Report
+          Report
         </span>
       </button>
 
@@ -192,11 +192,11 @@ export const BugReportWidget: React.FC = () => {
             <div className="flex items-center justify-between p-5 border-b border-zinc-800/50">
               <h3 className="text-xl font-bold text-zinc-100 flex items-center gap-3">
                 <Bug className="w-6 h-6 text-red-400" />
-                Report a Bug
+                Found a feature?
               </h3>
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-zinc-500 hover:text-zinc-300 transition-colors p-1 rounded-md hover:bg-zinc-800"
+                className="text-zinc-500 hover:text-zinc-300 transition-colors p-1 rounded-md hover:bg-zinc-800 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -216,21 +216,21 @@ export const BugReportWidget: React.FC = () => {
               <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-5">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-zinc-400 uppercase tracking-wide">
-                    Issue Description <span className="text-red-400">*</span>
+                    What Happened? <span className="text-red-400">*</span>
                   </label>
                   <textarea
                     required
                     rows={4}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Describe what is not working or what error occurred..."
+                    placeholder="Describe what broke... or what works suspiciously well."
                     className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all resize-none"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-zinc-400 uppercase tracking-wide">
-                    Your Email{" "}
+                    Feature Hunter Email{" "}
                     <span className="lowercase font-normal tracking-normal text-zinc-500">
                       (optional)
                     </span>
@@ -239,14 +239,14 @@ export const BugReportWidget: React.FC = () => {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@company.com"
+                    placeholder="feature.hunter@company.com"
                     className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-zinc-400 uppercase tracking-wide">
-                    Attach Screenshot{" "}
+                    Proof Of Feature{" "}
                     <span className="lowercase font-normal tracking-normal text-zinc-500">
                       (max 5MB)
                     </span>
@@ -260,7 +260,7 @@ export const BugReportWidget: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleRemoveScreenshot}
-                        className="text-zinc-500 hover:text-red-400 transition-colors p-1"
+                        className="text-zinc-500 hover:text-red-400 transition-colors p-1 cursor-pointer"
                         title="Remove image"
                       >
                         <Trash2 className="w-5 h-5" />
@@ -270,7 +270,7 @@ export const BugReportWidget: React.FC = () => {
                     <label className="w-full border-2 border-dashed border-zinc-800 rounded-xl p-4 flex flex-col items-center justify-center gap-2 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600 hover:bg-zinc-800/30 transition-all cursor-pointer group">
                       <Upload className="w-5 h-5 group-hover:-translate-y-1 transition-transform" />
                       <span className="text-sm font-medium">
-                        Select image...
+                        Drop evidence here...
                       </span>
                       <input
                         ref={fileInputRef}
@@ -294,7 +294,7 @@ export const BugReportWidget: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsOpen(false)}
-                    className="px-4 py-2.5 text-sm font-medium text-zinc-400 hover:text-zinc-100 transition-colors"
+                    className="px-4 py-2.5 text-sm font-medium text-zinc-400 hover:text-zinc-100 transition-colors cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -303,7 +303,7 @@ export const BugReportWidget: React.FC = () => {
                     disabled={
                       isSubmitting || cooldown > 0 || !description.trim()
                     }
-                    className="flex items-center gap-2 px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20 disabled:shadow-none"
+                    className="flex items-center gap-2 px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 disabled:bg-neutral-800 disabled:text-neutral-600 disabled:cursor-not-allowed cursor-pointer text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20 disabled:shadow-none"
                   >
                     {isSubmitting ? (
                       <>
@@ -313,7 +313,7 @@ export const BugReportWidget: React.FC = () => {
                     ) : cooldown > 0 ? (
                       `Wait (${cooldown}s)`
                     ) : (
-                      "Submit Report"
+                      "Expose Feature"
                     )}
                   </button>
                 </div>
