@@ -8,9 +8,22 @@ export interface ChangelogItem {
   }[];
 }
 
-export const CURRENT_VERSION = "1.5.2";
+export const CURRENT_VERSION = "1.6.0";
 
 export const CHANGELOG: ChangelogItem[] = [
+  {
+  version: "1.6.0",
+  date: "August 4, 2026",
+  title: "Lucide Avatars, Live Notifications & Modular Realtime Engine",
+  changes: [
+    { type: "feature", text: "Replaced player emojis with Lucide icons and reserved the Crown badge exclusively for room hosts." },
+    { type: "feature", text: "Added real-time toast notifications for player joins, departures, kicks, and host promotions." },
+    { type: "feature", text: "Implemented dedicated modals for kicked players and terminated sessions." },
+    { type: "improvement", text: "Modularized Supabase channel logic, event handlers, and PlayerDesk component with strict TypeScript typing." },
+    { type: "fix", text: "Resolved ghost player desyncs, host role synchronization, and channel re-subscription loops." },
+    { type: "fix", text: "Polished Bug Report form styling, cursor pointers, and button UI consistency." }
+  ]
+  },
   {
     version: "1.5.2",
     date: "July 21, 2026",
