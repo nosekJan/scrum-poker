@@ -189,24 +189,15 @@ export function calculateTieInfo(
   const belowOrEqual = numericCards.filter((c) => c.number <= numAverage);
   const aboveOrEqual = numericCards.filter((c) => c.number >= numAverage);
 
-  let smartLower = "";
-  let smartHigher = "";
+ const smartLower =
+    belowOrEqual.length > 0
+      ? [...belowOrEqual].sort((a, b) => b.number - a.number)[0].string
+      : [...numericCards].sort((a, b) => a.number - b.number)[0].string;
 
-  if (belowOrEqual.length > 0) {
-    belowOrEqual.sort((a, b) => b.number - a.number);
-    smartLower = belowOrEqual[0].string;
-  } else {
-    const sorted = [...numericCards].sort((a, b) => a.number - b.number);
-    smartLower = sorted[0].string;
-  }
-
-  if (aboveOrEqual.length > 0) {
-    aboveOrEqual.sort((a, b) => a.number - b.number);
-    smartHigher = aboveOrEqual[0].string;
-  } else {
-    const sorted = [...numericCards].sort((a, b) => b.number - a.number);
-    smartHigher = sorted[0].string;
-  }
+  const smartHigher =
+    aboveOrEqual.length > 0
+      ? [...aboveOrEqual].sort((a, b) => a.number - b.number)[0].string
+      : [...numericCards].sort((a, b) => b.number - a.number)[0].string;
 
   if (smartLower === smartHigher) {
     return { isTie: false, lowest: smartLower, highest: smartHigher };
