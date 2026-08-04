@@ -5,6 +5,7 @@ export interface Player {
   name: string;
   selectedCard: CardValue | null;
   joinedAt: number;
+  emojiSeed?: number;
 }
 
 export interface GameState {

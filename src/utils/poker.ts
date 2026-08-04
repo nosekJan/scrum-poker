@@ -87,7 +87,7 @@ export function getPlayerIconMapping(players: Player[]): Record<string, LucideIc
   const usedIndices = new Set<number>();
 
   sortedPlayers.forEach((player) => {
-    const seedSource = (player as Player & { emojiSeed?: string }).emojiSeed?.toString() || player.id;
+    const seedSource = (player as { emojiSeed?: number | string; id: string }).emojiSeed?.toString() || player.id;
 
     let hash = 0;
     for (let i = 0; i < seedSource.length; i++) {
