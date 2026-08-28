@@ -45,7 +45,7 @@ export const PlayerDeskCard: React.FC<PlayerDeskCardProps> = ({
     <div
       className={`flex flex-col items-center transition-all duration-300 text-center group relative ${
         isCrowded ? "w-[64px] gap-1" : "w-[90px] gap-2"
-      } ${isFaded ? "opacity-40 scale-95" : "opacity-100 scale-100"}`}
+      }`}
     >
       <div
         className={`transition-all duration-300 relative [perspective:1000px] ${
@@ -62,7 +62,7 @@ export const PlayerDeskCard: React.FC<PlayerDeskCardProps> = ({
               player.selectedCard
                 ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-400 text-xs"
                 : "bg-neutral-900 border-neutral-800 text-neutral-600"
-            }`}
+            } ${isFaded ? "opacity-40" : "opacity-100"}`}
           >
             {player.selectedCard ? (
               <Check className="w-5 h-5 text-emerald-400" />
@@ -78,7 +78,7 @@ export const PlayerDeskCard: React.FC<PlayerDeskCardProps> = ({
               player.selectedCard
                 ? "bg-emerald-500 border border-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]"
                 : "bg-neutral-900 border-neutral-800 text-neutral-600"
-            }`}
+            } ${isFaded ? "opacity-40" : "opacity-100"}`}
           >
             {player.selectedCard ? (
               <span
@@ -161,7 +161,11 @@ export const PlayerDeskCard: React.FC<PlayerDeskCardProps> = ({
         )}
       </div>
 
-      <span className="text-xs font-medium text-neutral-400 w-full truncate text-center flex flex-col items-center gap-0.5">
+      <span
+        className={`text-xs font-medium text-neutral-400 w-full truncate text-center flex flex-col items-center gap-0.5 ${
+          isFaded ? "opacity-40" : "opacity-100"
+        }`}
+      >
         <span className="w-full truncate px-1">{player.name}</span>
         {isKicked ? (
           <span className="text-[9px] text-red-400 font-semibold uppercase tracking-wider bg-neutral-900 px-1 rounded border border-red-900/50">
