@@ -35,7 +35,7 @@ export const PlayerDeskCard: React.FC<PlayerDeskCardProps> = ({
   onPromote,
   onKick,
 }) => {
-  const isFaded = isOffline || isLateJoin;
+  const isFaded = isOffline || isLateJoin || isKicked;
   const isMenuOpen = activeMenuId === player.id;
   const isPlayerHost = player.id === hostId;
   const DisplayIcon = isPlayerHost ? Crown : Icon;

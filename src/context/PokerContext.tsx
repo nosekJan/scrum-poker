@@ -35,6 +35,7 @@ interface PokerContextType {
   notifications: RoomNotification[];
   isKicked: boolean;
   isSessionEnded: boolean;
+  kickedUserIdsRef: React.RefObject<Set<string>>;
 }
 
 export const PokerContext = createContext<PokerContextType | undefined>(
@@ -99,7 +100,6 @@ export const PokerProvider: React.FC<{
     left.forEach((player) => {
       if (poker.kickedUserIdsRef.current.has(player.id)) {
         addNotification("kick", player.name);
-        poker.kickedUserIdsRef.current.delete(player.id);
       } else {
         addNotification("leave", player.name);
       }
