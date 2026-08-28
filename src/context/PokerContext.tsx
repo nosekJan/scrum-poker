@@ -94,6 +94,9 @@ export const PokerProvider: React.FC<{
     );
 
     joined.forEach((player) => {
+      if (poker.kickedUserIdsRef.current.has(player.id)) {
+        poker.kickedUserIdsRef.current.delete(player.id);
+      }
       addNotification("join", player.name);
     });
 
