@@ -10,6 +10,7 @@ interface PlayerDeskCardProps {
   isRevealed: boolean;
   isCrowded: boolean;
   isOffline: boolean;
+  isKicked?: boolean;
   isLateJoin: boolean;
   icon: LucideIcon;
   activeMenuId: string | null;
@@ -26,6 +27,7 @@ export const PlayerDeskCard: React.FC<PlayerDeskCardProps> = ({
   isRevealed,
   isCrowded,
   isOffline,
+  isKicked,
   isLateJoin,
   icon: Icon,
   activeMenuId,
@@ -94,57 +96,63 @@ export const PlayerDeskCard: React.FC<PlayerDeskCardProps> = ({
           </div>
         </div>
 
-        {isHost && player.id !== myUserId && !player.id.startsWith("mock-") && (
-          <div
-            className="absolute top-0 right-0 z-30 flex items-center justify-center"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={() => setActiveMenuId(isMenuOpen ? null : player.id)}
-              className={`flex items-center justify-center text-neutral-500 hover:text-neutral-200 transition-colors cursor-pointer focus:outline-none active:scale-95 ${
-                isCrowded ? "w-6 h-6" : "w-7 h-7"
-              }`}
-              title="Player Options"
+        {isHost &&
+          player.id !== myUserId &&
+          !player.id.startsWith("mock-") &&
+          !isOffline &&
+          !isKicked && (
+            <div
+              className="absolute top-0 right-0 z-30 flex items-center justify-center"
+              onClick={(e) => e.stopPropagation()}
             >
-              <MoreVertical className={isCrowded ? "w-3.5 h-3.5" : "w-4 h-4"} />
-            </button>
+              <button
+                type="button"
+                onClick={() => setActiveMenuId(isMenuOpen ? null : player.id)}
+                className={`flex items-center justify-center text-neutral-500 hover:text-neutral-200 transition-colors cursor-pointer focus:outline-none active:scale-95 ${
+                  isCrowded ? "w-6 h-6" : "w-7 h-7"
+                }`}
+                title="Player Options"
+              >
+                <MoreVertical
+                  className={isCrowded ? "w-3.5 h-3.5" : "w-4 h-4"}
+                />
+              </button>
 
-            {isMenuOpen && (
-              <div className="absolute right-full top-0.5 mr-1 flex flex-col bg-neutral-950/95 backdrop-blur-sm border border-neutral-800 rounded-lg shadow-2xl py-1 z-40 animate-fadeIn min-w-[105px]">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onPromote(player.id);
-                    setActiveMenuId(null);
-                  }}
-                  className="w-full px-3 py-1.5 text-[11px] text-amber-400 hover:bg-neutral-900 transition-colors flex items-center justify-start gap-2 font-bold cursor-pointer rounded-t whitespace-nowrap"
-                >
-                  <Crown className="w-3.5 h-3.5 text-amber-400" />
-                  Promote
-                </button>
-                <div className="h-[1px] w-full bg-neutral-800/80 flex-shrink-0" />
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        `Are you sure you want to kick ${player.name}?`,
-                      )
-                    ) {
-                      onKick(player.id);
-                    }
-                    setActiveMenuId(null);
-                  }}
-                  className="w-full px-3 py-1.5 text-[11px] text-red-500 hover:bg-neutral-900 transition-colors flex items-center justify-start gap-2 font-bold cursor-pointer rounded-b whitespace-nowrap"
-                >
-                  <Ban className="w-3.5 h-3.5 text-red-500" />
-                  Kick
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+              {isMenuOpen && (
+                <div className="absolute right-full top-0.5 mr-1 flex flex-col bg-neutral-950/95 backdrop-blur-sm border border-neutral-800 rounded-lg shadow-2xl py-1 z-40 animate-fadeIn min-w-[105px]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onPromote(player.id);
+                      setActiveMenuId(null);
+                    }}
+                    className="w-full px-3 py-1.5 text-[11px] text-amber-400 hover:bg-neutral-900 transition-colors flex items-center justify-start gap-2 font-bold cursor-pointer rounded-t whitespace-nowrap"
+                  >
+                    <Crown className="w-3.5 h-3.5 text-amber-400" />
+                    Promote
+                  </button>
+                  <div className="h-[1px] w-full bg-neutral-800/80 flex-shrink-0" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Are you sure you want to kick ${player.name}?`,
+                        )
+                      ) {
+                        onKick(player.id);
+                      }
+                      setActiveMenuId(null);
+                    }}
+                    className="w-full px-3 py-1.5 text-[11px] text-red-500 hover:bg-neutral-900 transition-colors flex items-center justify-start gap-2 font-bold cursor-pointer rounded-b whitespace-nowrap"
+                  >
+                    <Ban className="w-3.5 h-3.5 text-red-500" />
+                    Kick
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
         {player.id === myUserId && (
           <span className="absolute -top-2 -left-2 bg-neutral-800 border border-neutral-700 text-[8px] px-1 py-0.5 rounded-full text-neutral-400 font-bold uppercase tracking-wide z-20">
@@ -155,11 +163,15 @@ export const PlayerDeskCard: React.FC<PlayerDeskCardProps> = ({
 
       <span className="text-xs font-medium text-neutral-400 w-full truncate text-center flex flex-col items-center gap-0.5">
         <span className="w-full truncate px-1">{player.name}</span>
-        {isOffline && (
+        {isKicked ? (
+          <span className="text-[9px] text-red-400 font-semibold uppercase tracking-wider bg-neutral-900 px-1 rounded border border-red-900/50">
+            Kicked
+          </span>
+        ) : isOffline ? (
           <span className="text-[9px] text-neutral-500 font-semibold uppercase tracking-wider bg-neutral-900 px-1 rounded border border-neutral-800">
             Offline
           </span>
-        )}
+        ) : null}
         {isLateJoin && (
           <span className="text-[9px] text-sky-400 font-semibold uppercase tracking-wider bg-neutral-900 px-1 rounded border border-sky-900/50">
             Joined
