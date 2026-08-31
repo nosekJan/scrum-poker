@@ -159,7 +159,8 @@ export const handleSyncResponseEvent = (
   setActiveStory: Dispatch<SetStateAction<string | null>>,
   setCompletedStories: Dispatch<SetStateAction<Story[]>>,
   setStoryStartTime: Dispatch<SetStateAction<number | null>>,
-  setPlayers: Dispatch<SetStateAction<Player[]>>
+  setPlayers: Dispatch<SetStateAction<Player[]>>,
+  kickedUserIdsRef: RefObject<Set<string>>
 ): void => {
   const {
     customHostId: incomingCustomHost,
@@ -169,8 +170,16 @@ export const handleSyncResponseEvent = (
     completedStories: syncCompletedStories,
     storyStartTime: syncStoryStartTime,
     players: syncPlayers,
+    kickedUserIds: syncKickedUserIds,
   } = event.payload;
 
+ if (syncKickedUserIds && Array.isArray(syncKickedUserIds) && kickedUserIdsRef.current) {
+    syncKickedUserIds.forEach((id) => {
+      if (id !== myUserId) {
+        kickedUserIdsRef.current.add(id);
+      }
+    });
+  }
   if (incomingCustomHost && !customHostIdRef.current) {
     customHostIdRef.current = incomingCustomHost;
     roomStateRef.current.customHostId = incomingCustomHost;
@@ -317,7 +326,8 @@ export const handleRequestSyncEvent = (
   myUserId: string,
   hostIdRef: RefObject<string | null>,
   customHostIdRef: RefObject<string | null>,
-  roomStateRef: RefObject<RoomState>
+  roomStateRef: RefObject<RoomState>,
+  kickedUserIdsRef: RefObject<Set<string>>
 ): void => {
   const activeCustomHost =
     customHostIdRef.current || roomStateRef.current.customHostId;
@@ -328,7 +338,12 @@ export const handleRequestSyncEvent = (
     channel.send({
       type: "broadcast",
       event: "sync_response",
-      payload: roomStateRef.current,
+      payload: {
+        ...roomStateRef.current,
+        kickedUserIds: kickedUserIdsRef.current
+          ? Array.from(kickedUserIdsRef.current)
+          : [],
+      },
     });
   }
 };

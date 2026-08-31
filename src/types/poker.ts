@@ -63,6 +63,7 @@ export interface SyncResponsePayload {
   completedStories: Story[];
   storyStartTime: number | null;
   players?: Player[];
+  kickedUserIds?: string[];
 }
 
 export interface PromoteHostPayload {
@@ -86,4 +87,5 @@ export interface RoomState {
   storyStartTime: number | null;
   players: Player[];
   customHostId: string | null;
+  kickedUserIds?: string[];
 }

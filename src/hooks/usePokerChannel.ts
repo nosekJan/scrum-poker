@@ -288,7 +288,8 @@ const hostIdRef = useRef<string | null>(null);
           myUserId,
           hostIdRef,
           customHostIdRef,
-          roomStateRef
+          roomStateRef,
+          kickedUserIdsRef
         )
       )
       .on("broadcast", { event: "sync_response" }, (event: RealtimeEvent<SyncResponsePayload>) =>
@@ -305,7 +306,8 @@ const hostIdRef = useRef<string | null>(null);
           setActiveStory,
           setCompletedStories,
           setStoryStartTime,
-          setPlayers
+          setPlayers,
+          kickedUserIdsRef
         )
       )
       .on("broadcast", { event: "promote_host" }, (event: RealtimeEvent<PromoteHostPayload>) =>
