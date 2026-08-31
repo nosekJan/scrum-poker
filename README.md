@@ -5,14 +5,14 @@ A modern, fast, and lightweight web application for Planning Poker (Scrum Poker)
 ## ✨ Features Built So Far
 
 - **In-App Bug Reporting & Discord Integration:** Includes a floating action widget allowing users to report issues directly to the development team via Discord webhooks. Features automatic context capture (Room ID, player state), drag-and-drop screenshot uploads (up to 5MB), and a built-in 60-second cooldown rate limiter to prevent spam, all wrapped in the modern Zinc/Emerald dark UI.
-- **Seamless Late Joiner Engine:** Empowers participants to jump directly into an active room and cast votes mid-session. Includes strict UI buffer states ("JOINED" and "OFFLINE") that accurately track edge-case users who connect or drop out exclusively during the reveal phase, completely eliminating ghost players from the board.
-- **In-App Changelog (What's New):** Integrates an isolated, lightweight versioning widget in the Lobby screen that opens a beautiful timeline modal displaying the application's release history. Uses browser local storage to track read states and signals unread updates using an ambient pulsing emerald indicator.
+- **Seamless Late Joiner Engine & Kicked State Sync:** Empowers participants to jump directly into an active room and cast votes mid-session. Includes strict UI buffer states ("JOINED", "KICKED", and "OFFLINE") that accurately track edge-case users. Synchronizes evicted player IDs across room state requests to prevent incorrect offline fallback indicators upon client reconnects.
+- **In-App Changelog (What's New):** Integrates an isolated, lightweight versioning widget in the Lobby screen that opens a timeline modal displaying the application's release history. Uses browser local storage to track read states and signals unread updates using an ambient pulsing emerald indicator.
 - **Advanced Host Moderation (Kick & Promote):** Empowers room hosts with direct moderation tools to instantly eject players (Kick) or reassign host privileges (Promote) directly from the player grid, synchronized instantly across all clients via Supabase Broadcast.
 - **Dynamic Mobile-First Layout:** Responsive Grid (Tailwind CSS) that dynamically rearranges the UI based on viewport size. On mobile/tablets, the voting deck shifts directly beneath the player desk to eliminate scrolling, while expanding into a multi-column side-by-side dashboard on desktop viewports.
-- **Smart Host Tie-Break Engine:** Instantly evaluates split decisions when multiple cards match the highest pick count, using a mathematical average anchor to provide hosts with precise Higher vs. Lower override parameters.
+- **Smart Host Distance-Based Tie-Break Engine:** Instantly evaluates split decisions when multiple cards match the highest pick count, using absolute distance calculations relative to the mathematical average anchor to provide hosts with precise Higher vs. Lower override parameters. Automatically selects the single closest card without triggering unnecessary tie-break overrides.
 - **Fluid Viewport Calculation Height:** Utilizes custom dynamic viewport constraints (`calc(100vh - 390px)`) to keep the right-hand panel perfectly matched to the board layout without dropping cards below the OS taskbar edge.
 - **Crowded Room Spacing Engine:** Automatically compresses card asset dimensions to compact bounding frames (`w-10 h-14`) and close grid spacing once a session scales past 10 active players, squeezing massive 15+ user rooms into two concise, readable columns.
-- **Ergonomic Card Asset Padding:** Downscaled baseline player avatar emojis from `text-3xl` to `text-2xl` to inject enhanced internal padding and breathing room within standard card frames, preventing visual asset clipping while leaving the compact `text-xl` footprint untouched for crowded scenarios.
+- **Ergonomic Card Asset Padding:** Downscaled baseline player avatar icons to inject enhanced internal padding and breathing room within standard card frames, preventing visual asset clipping while leaving the compact footprint untouched for crowded scenarios.
 - **Interactive Player Avatars & Reserved Host Badge:** Replaced baseline emojis with a Lucide React icon suite for player avatars. Automatically excludes and reserves the Crown icon exclusively for the active room host.
 - **In-Room Event Notifications:** Real-time toast system announcing player join, leave, kick, and host promotion events directly within the active poker session.
 - **Session Lifecycle & Ejection Control:** Handles session termination and host eviction with dedicated modal dialogues (`KickedModal`, `SessionEndedModal`), cleanly unsubscribing client channels to prevent automatic reconnection loops.
@@ -23,7 +23,7 @@ A modern, fast, and lightweight web application for Planning Poker (Scrum Poker)
 - **Host Power Shortcuts:** Integrated native `Ctrl + Enter` (and `Cmd + Enter`) keydown bindings inside the story initiation viewport area for rapid mouse-free card setup.
 - **Continuous Status Pulse Badge:** Implemented continuous micro-animation pulsing states on active side-navigation counters to telegraph current gaming operations clearly across any viewport state or open panel tab.
 - **Contextual Empty States:** Smart UX headers that replace generic placeholders with actionable real-time guidance (e.g., _"Waiting for host to set a story..."_ for players vs. _"Please set a story to begin voting..."_ for hosts).
-- **Smart Non-Numeric Average Logic:** Gracefully isolates non-numeric voting outliers (like `☕` or `?`). If a team unanimously triggers a coffee break, the board safely calculates symbolic results instead of defaulting to numeric errors or false `0.0` outputs.
+- **Smart Non-Numeric Average Logic:** Gracefully isolates non-numeric voting outliers (like `?`). If a team unanimously triggers non-numeric estimates, the board safely calculates symbolic results instead of defaulting to numeric errors or false `0.0` outputs.
 - **Branded Scrollbar Customization:** Replaced crude default window/container sliders with fine, custom dark track components styled with reactive, fluid emerald accenting upon mouse hover.
 - **Unique Shareable Rooms & Deep-Linking:** Automatic room generation with dynamic routing and query parameter detection that automatically pre-fills the room ID for single-click player onboarding.
 - **Persistent Identity:** Automatically persists player identities via `localStorage` and keeps accurate connection tracking using `sessionStorage`.
@@ -34,15 +34,14 @@ A modern, fast, and lightweight web application for Planning Poker (Scrum Poker)
 - **One-Click Re-Vote:** Allows instant resetting of current votes for a fresh estimation round while preserving the active story and stopwatch state.
 - **Graceful Session Termination:** Awaits asynchronous websocket handshakes before unmounting elements, ensuring all players are properly kicked back to the lobby when the host ends a session.
 - **Modern Dark UI:** Tailored with Tailwind CSS for a premium, distraction-free estimation environment.
-- **CSS 3D Flip Animation Engine:** Implements smooth, hardware-accelerated 3D perspective transitions (`preserve-3d` and `rotateY`) that realistically flip player cards simultaneously during the reveal phase.
-- **Unanimous Celebration System:** Integrates a dynamic canvas confetti engine that automatically triggers a customized emerald-themed celebration the exact millisecond a 100% unanimous team vote is achieved.
+- **CSS 3D Flip Animation Engine:** Implements smooth, hardware-accelerated 3D perspective transitions (`preserve-3d` and `rotateY`) that realistically flip player cards simultaneously during the reveal phase, preserving 3D backface visibility without alpha channel bleed.
 - **Smart Clipboard Invite Links:** Replaces raw static room hashes with an intelligent share button that dynamically captures the current environment origin (handling `localhost` vs production domains) and copies a full destination URL with temporal UI state feedback ("Link Copied!").
 - **Host Story Clipboard Extraction:** Enables session hosts to instantly extract clean story titles from the history logs into the clipboard via a space-optimized vertical action stack, accompanied by reactive, temporal checkmark micro-feedback (`✔️`).
 
 ## 🚀 Tech Stack
 
 - **Frontend:** React (v19), TypeScript, Vite
-- **Styling & Animations:** Tailwind CSS (v4), Canvas Confetti
+- **Styling & Animations:** Tailwind CSS (v4), Lucide React
 - **Routing:** React Router DOM
 - **Real-time Backend:** Supabase (Broadcast & Presence)
 
