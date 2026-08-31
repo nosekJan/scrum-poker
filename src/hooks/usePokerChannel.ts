@@ -107,8 +107,13 @@ const hostIdRef = useRef<string | null>(null);
   const updatePresence = useCallback((nextCustomHostId?: string | null) => {
     if (!channelRef.current) return;
     delete exitedHostsRef.current[myUserId];
-    joinedAtRef.current = Date.now();
     const hostToTrack = nextCustomHostId !== undefined ? nextCustomHostId : customHostIdRef.current;
+    console.log(`[DEBUG][updatePresence] ${JSON.stringify({
+      myUserId,
+      joinedAt: joinedAtRef.current,
+      hostToTrack,
+      customHostIdRef: customHostIdRef.current
+    }, null, 2)}`);
     channelRef.current.track({
       name: playerNameRef.current,
       joinedAt: joinedAtRef.current,
@@ -195,7 +200,10 @@ const hostIdRef = useRef<string | null>(null);
     }
 
     const roomChannel = supabase.channel(channelName, {
-      config: { presence: { key: myUserId } },
+      config: {
+        presence: { key: myUserId },
+        broadcast: { self: true },
+      },
     });
 
     channelRef.current = roomChannel;
@@ -249,7 +257,8 @@ const hostIdRef = useRef<string | null>(null);
           roomStateRef,
           setHostId,
           playersRef,
-          hostIdRef
+          hostIdRef,
+          updatePresence
         )
       )
       .on("broadcast", { event: "host_leaving" }, (event: RealtimeEvent<PlayerLeavingPayload>) =>
@@ -261,7 +270,8 @@ const hostIdRef = useRef<string | null>(null);
           roomStateRef,
           setHostId,
           playersRef,
-          hostIdRef
+          hostIdRef,
+          updatePresence
         )
       )
       .on("broadcast", { event: "session_ended" }, () =>
@@ -278,7 +288,8 @@ const hostIdRef = useRef<string | null>(null);
           myUserId,
           hostIdRef,
           customHostIdRef,
-          roomStateRef
+          roomStateRef,
+          kickedUserIdsRef
         )
       )
       .on("broadcast", { event: "sync_response" }, (event: RealtimeEvent<SyncResponsePayload>) =>
@@ -295,7 +306,8 @@ const hostIdRef = useRef<string | null>(null);
           setActiveStory,
           setCompletedStories,
           setStoryStartTime,
-          setPlayers
+          setPlayers,
+          kickedUserIdsRef
         )
       )
       .on("broadcast", { event: "promote_host" }, (event: RealtimeEvent<PromoteHostPayload>) =>
@@ -352,9 +364,8 @@ const hostIdRef = useRef<string | null>(null);
     const targetPlayer = playersRef.current.find((p) => p.id === playerId);
     const username = targetPlayer?.name;
 
-    handlePromoteHost({ payload: { hostId: playerId, username } });
     await sendPromoteHost(channelRef.current, playerId, username);
-  }, [handlePromoteHost]);
+  }, []);
 
   const endSession = useCallback(async () => {
     await sendSessionEnded(channelRef.current);

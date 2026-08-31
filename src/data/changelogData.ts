@@ -8,9 +8,21 @@ export interface ChangelogItem {
   }[];
 }
 
-export const CURRENT_VERSION = "1.6.0";
+export const CURRENT_VERSION = "1.6.1";
 
 export const CHANGELOG: ChangelogItem[] = [
+ {
+    version: "1.6.1",
+    date: "August 31, 2026",
+    title: "Kicked State Persistence, 3D Rendering & Math Precision",
+    changes: [
+      { type: "fix", text: "Refined suggested estimate math and distance-based tie-break calculation." },
+      { type: "fix", text: "Prevented self-kick status assignment when syncing kickedUserIds list." },
+      { type: "fix", text: "Persisted kicked state and hid action menus for offline and kicked player cards." },
+      { type: "fix", text: "Applied opacity directly to card face containers to preserve 3D backface hiding." },
+      { type: "improvement", text: "Cleared kicked status upon player rejoin and removed legacy confetti logic." }
+    ]
+  },
   {
   version: "1.6.0",
   date: "August 4, 2026",

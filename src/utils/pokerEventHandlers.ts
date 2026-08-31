@@ -88,31 +88,32 @@ export const handlePlayerLeavingEvent = (
   roomStateRef: RefObject<RoomState>,
   setHostId: Dispatch<SetStateAction<string | null>>,
   playersRef: RefObject<Player[]>,
-  hostIdRef: RefObject<string | null>
+  hostIdRef: RefObject<string | null>,
+  updatePresence?: (nextCustomHostId?: string | null) => void
 ): void => {
   const { userId, timestamp } = event.payload;
   exitedHostsRef.current[userId] = timestamp || Date.now();
   setPlayers((prev) => prev.filter((p) => p.id !== userId));
 
-  if (customHostIdRef.current === userId) {
-    customHostIdRef.current = null;
-    roomStateRef.current.customHostId = null;
-  }
+  const isHostLeaving =
+    hostIdRef.current === userId || customHostIdRef.current === userId;
 
-  setHostId((current) => {
-    if (current === userId) {
-      const remaining = playersRef.current.filter((p) => p.id !== userId);
-      if (remaining.length > 0) {
-        const sorted = [...remaining].sort((a, b) => a.joinedAt - b.joinedAt);
-        const nextHostId = sorted[0].id;
-        hostIdRef.current = nextHostId;
-        return nextHostId;
-      }
-      hostIdRef.current = null;
-      return null;
+  if (isHostLeaving) {
+    const remaining = playersRef.current.filter((p) => p.id !== userId);
+    const nextHostId =
+      remaining.length > 0
+        ? [...remaining].sort((a, b) => a.joinedAt - b.joinedAt)[0].id
+        : null;
+
+    hostIdRef.current = nextHostId;
+    customHostIdRef.current = nextHostId;
+    roomStateRef.current.customHostId = nextHostId;
+    setHostId(nextHostId);
+
+    if (updatePresence) {
+      updatePresence(nextHostId);
     }
-    return current;
-  });
+  }
 };
 
 export const handleKickPlayerEvent = (
@@ -158,7 +159,8 @@ export const handleSyncResponseEvent = (
   setActiveStory: Dispatch<SetStateAction<string | null>>,
   setCompletedStories: Dispatch<SetStateAction<Story[]>>,
   setStoryStartTime: Dispatch<SetStateAction<number | null>>,
-  setPlayers: Dispatch<SetStateAction<Player[]>>
+  setPlayers: Dispatch<SetStateAction<Player[]>>,
+  kickedUserIdsRef: RefObject<Set<string>>
 ): void => {
   const {
     customHostId: incomingCustomHost,
@@ -168,9 +170,18 @@ export const handleSyncResponseEvent = (
     completedStories: syncCompletedStories,
     storyStartTime: syncStoryStartTime,
     players: syncPlayers,
+    kickedUserIds: syncKickedUserIds,
   } = event.payload;
 
-  if (incomingCustomHost) {
+ if (syncKickedUserIds && Array.isArray(syncKickedUserIds) && kickedUserIdsRef.current) {
+    syncKickedUserIds.forEach((id) => {
+      if (id !== myUserId) {
+        kickedUserIdsRef.current.add(id);
+      }
+    });
+  }
+  
+  if (incomingCustomHost && !customHostIdRef.current) {
     customHostIdRef.current = incomingCustomHost;
     roomStateRef.current.customHostId = incomingCustomHost;
     setHostId(incomingCustomHost);
@@ -212,7 +223,7 @@ export const handlePresenceSyncEvent = (
   let oldestTime = Infinity;
   let defaultHostId: string | null = null;
   const activePlayersMap: Record<string, PresencePayload> = {};
-  let presenceCustomHostId: string | null = null;
+  const foundCustomHosts: string[] = [];
 
   for (const [key, rawPresenceArray] of Object.entries(state)) {
     const presenceArray = rawPresenceArray as unknown as PresencePayload[];
@@ -224,17 +235,16 @@ export const handlePresenceSyncEvent = (
     const playerData = sortedPresence[0];
     if (!playerData) continue;
 
-    if (playerData.customHostId) {
-      presenceCustomHostId = playerData.customHostId;
-    }
-
     const exitTime = exitedHostsRef.current[key];
-    if (exitTime && (playerData.joinedAt || 0) <= exitTime) {
-      continue;
+    if (exitTime) {
+      if ((playerData.joinedAt || 0) <= exitTime) {
+        continue;
+      }
+      delete exitedHostsRef.current[key];
     }
 
-    if (exitTime) {
-      delete exitedHostsRef.current[key];
+    if (playerData.customHostId) {
+      foundCustomHosts.push(playerData.customHostId);
     }
 
     activePlayersMap[key] = playerData;
@@ -249,26 +259,32 @@ export const handlePresenceSyncEvent = (
   const activeKeys = Object.keys(activePlayersMap);
   if (activeKeys.length === 0) return;
 
-  const currentCustomHost =
-    presenceCustomHostId ||
-    customHostIdRef.current ||
-    roomStateRef.current.customHostId;
-  const isCustomHostExited = Boolean(
-    currentCustomHost && exitedHostsRef.current[currentCustomHost]
-  );
+  let validCustomHost: string | null = null;
 
-  if (isCustomHostExited) {
-    customHostIdRef.current = null;
-  } else if (currentCustomHost) {
-    customHostIdRef.current = currentCustomHost;
+  if (customHostIdRef.current && activeKeys.includes(customHostIdRef.current)) {
+    validCustomHost = customHostIdRef.current;
+  } else if (
+    roomStateRef.current.customHostId &&
+    activeKeys.includes(roomStateRef.current.customHostId)
+  ) {
+    validCustomHost = roomStateRef.current.customHostId;
+  } else {
+    validCustomHost =
+      foundCustomHosts.find((id) => activeKeys.includes(id)) || null;
   }
 
-  roomStateRef.current.customHostId = customHostIdRef.current;
+  customHostIdRef.current = validCustomHost;
+  roomStateRef.current.customHostId = validCustomHost;
 
-  const finalHostId =
-    customHostIdRef.current && activeKeys.includes(customHostIdRef.current)
-      ? customHostIdRef.current
-      : defaultHostId;
+  const finalHostId = validCustomHost || defaultHostId;
+
+  console.log(`[DEBUG][handlePresenceSyncEvent] ${JSON.stringify({
+    activeKeys,
+    foundCustomHosts,
+    customHostIdRef: customHostIdRef.current,
+    defaultHostId,
+    finalHostId
+  }, null, 2)}`);
 
   setHostId(finalHostId);
   hostIdRef.current = finalHostId;
@@ -311,7 +327,8 @@ export const handleRequestSyncEvent = (
   myUserId: string,
   hostIdRef: RefObject<string | null>,
   customHostIdRef: RefObject<string | null>,
-  roomStateRef: RefObject<RoomState>
+  roomStateRef: RefObject<RoomState>,
+  kickedUserIdsRef: RefObject<Set<string>>
 ): void => {
   const activeCustomHost =
     customHostIdRef.current || roomStateRef.current.customHostId;
@@ -322,7 +339,12 @@ export const handleRequestSyncEvent = (
     channel.send({
       type: "broadcast",
       event: "sync_response",
-      payload: roomStateRef.current,
+      payload: {
+        ...roomStateRef.current,
+        kickedUserIds: kickedUserIdsRef.current
+          ? Array.from(kickedUserIdsRef.current)
+          : [],
+      },
     });
   }
 };
@@ -340,6 +362,11 @@ export const handlePromoteHostEvent = (
   >
 ): void => {
   const { hostId: nextHostId, username } = event.payload;
+  console.log(`[DEBUG][handlePromoteHostEvent] ${JSON.stringify({
+    nextHostId,
+    username,
+    currentHostId: hostIdRef.current
+  }, null, 2)}`);
   customHostIdRef.current = nextHostId;
   roomStateRef.current.customHostId = nextHostId;
   setHostId(nextHostId);

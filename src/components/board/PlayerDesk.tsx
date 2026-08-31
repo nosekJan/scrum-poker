@@ -22,6 +22,7 @@ export const PlayerDesk: React.FC = () => {
     activeStory,
     kickPlayer,
     promotePlayer,
+    kickedUserIdsRef,
   } = usePoker();
 
   const [seenDuringReveal, setSeenDuringReveal] = useState<Player[]>([]);
@@ -89,7 +90,7 @@ export const PlayerDesk: React.FC = () => {
     if (tieInfo.isTie) {
       return tiePreference === "higher" ? tieInfo.highest : tieInfo.lowest;
     }
-    return voteStats[0].card;
+    return tieInfo.lowest || voteStats[0].card;
   }, [voteStats, tieInfo, tiePreference]);
 
   return (
@@ -141,7 +142,8 @@ export const PlayerDesk: React.FC = () => {
               ? votesSnapshot.some((v) => v.id === player.id)
               : true;
           const isActive = players.some((p) => p.id === player.id);
-          const isOffline = isRevealed && !isActive;
+          const isKicked = Boolean(kickedUserIdsRef?.current?.has(player.id));
+          const isOffline = isRevealed && !isActive && !isKicked;
           const isLateJoin = isRevealed && !isVoter && isActive;
 
           return (
@@ -154,6 +156,7 @@ export const PlayerDesk: React.FC = () => {
               isRevealed={isRevealed}
               isCrowded={isCrowded}
               isOffline={isOffline}
+              isKicked={isKicked}
               isLateJoin={isLateJoin}
               icon={playerIcons[player.id]}
               activeMenuId={activeMenuId}
