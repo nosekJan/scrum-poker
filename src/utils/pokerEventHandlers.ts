@@ -180,6 +180,7 @@ export const handleSyncResponseEvent = (
       }
     });
   }
+  
   if (incomingCustomHost && !customHostIdRef.current) {
     customHostIdRef.current = incomingCustomHost;
     roomStateRef.current.customHostId = incomingCustomHost;

@@ -119,8 +119,7 @@ export function calculateAverage(players: Player[]): string {
     .filter((v) => !isNaN(v));
 
   if (validVotes.length === 0) {
-    const hasCoffee = players.some((p) => p.selectedCard === "☕");
-    return hasCoffee ? "☕" : "—";
+    return "—";
   }
 
   return (
@@ -158,8 +157,9 @@ export function calculateTieInfo(
   voteStats: VoteStat[],
   averageStr: string
 ): TieInfo {
-  if (voteStats.length === 0)
+  if (voteStats.length === 0) {
     return { isTie: false, lowest: "", highest: "" };
+  }
 
   const maxCount = voteStats[0].count;
   const topCards = voteStats
@@ -172,40 +172,55 @@ export function calculateTieInfo(
 
   const numAverage = parseFloat(averageStr);
   if (isNaN(numAverage)) {
-    const sorted = [...topCards].sort(
-      (a, b) => parseFloat(a) - parseFloat(b)
-    );
+    const sorted = [...topCards]
+      .map((c) => ({ card: c, val: parseFloat(c) }))
+      .filter((c) => !isNaN(c.val))
+      .sort((a, b) => a.val - b.val);
+
+    if (sorted.length === 0) {
+      return { isTie: false, lowest: topCards[0], highest: topCards[0] };
+    }
+
     return {
-      isTie: true,
-      lowest: sorted[0],
-      highest: sorted[sorted.length - 1],
+      isTie: sorted.length > 1,
+      lowest: sorted[0].card,
+      highest: sorted[sorted.length - 1].card,
     };
   }
 
   const numericCards = topCards
-    .map((c) => ({ string: c, number: parseFloat(c) }))
-    .filter((c) => !isNaN(c.number));
+    .map((c) => ({ card: c, val: parseFloat(c) }))
+    .filter((c) => !isNaN(c.val));
 
-  const belowOrEqual = numericCards.filter((c) => c.number <= numAverage);
-  const aboveOrEqual = numericCards.filter((c) => c.number >= numAverage);
-
- const smartLower =
-    belowOrEqual.length > 0
-      ? [...belowOrEqual].sort((a, b) => b.number - a.number)[0].string
-      : [...numericCards].sort((a, b) => a.number - b.number)[0].string;
-
-  const smartHigher =
-    aboveOrEqual.length > 0
-      ? [...aboveOrEqual].sort((a, b) => a.number - b.number)[0].string
-      : [...numericCards].sort((a, b) => b.number - a.number)[0].string;
-
-  if (smartLower === smartHigher) {
-    return { isTie: false, lowest: smartLower, highest: smartHigher };
+  if (numericCards.length === 0) {
+    return { isTie: false, lowest: topCards[0], highest: topCards[0] };
   }
+
+  const cardsWithDistance = numericCards.map((item) => ({
+    ...item,
+    distance: Math.abs(item.val - numAverage),
+  }));
+
+  cardsWithDistance.sort((a, b) => a.distance - b.distance);
+
+  const minDistance = cardsWithDistance[0].distance;
+  const closestCards = cardsWithDistance.filter(
+    (item) => Math.abs(item.distance - minDistance) < 0.001
+  );
+
+  if (closestCards.length === 1) {
+    return {
+      isTie: false,
+      lowest: closestCards[0].card,
+      highest: closestCards[0].card,
+    };
+  }
+
+  closestCards.sort((a, b) => a.val - b.val);
 
   return {
     isTie: true,
-    lowest: smartLower,
-    highest: smartHigher,
+    lowest: closestCards[0].card,
+    highest: closestCards[closestCards.length - 1].card,
   };
 }

@@ -90,7 +90,7 @@ export const PlayerDesk: React.FC = () => {
     if (tieInfo.isTie) {
       return tiePreference === "higher" ? tieInfo.highest : tieInfo.lowest;
     }
-    return voteStats[0].card;
+    return tieInfo.lowest || voteStats[0].card;
   }, [voteStats, tieInfo, tiePreference]);
 
   return (
